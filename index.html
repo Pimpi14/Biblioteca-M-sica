@@ -77,6 +77,11 @@
     button.secondary { background-color: #333; }
     button.btn-tidal { background-color: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 6px; }
     
+    .filter-row {
+      display: flex;
+      gap: 8px;
+    }
+
     select {
       background-color: var(--card-bg);
       color: var(--text);
@@ -294,12 +299,22 @@
       <button onclick="window.openAddOptions()">📷 Añadir Vinilo</button>
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
-    <select id="sort-select" onchange="window.renderCollection()">
-      <option value="newest">📅 Ordenar por: Más recientes</option>
-      <option value="title">🅰️ Ordenar por: Nombre (Artista/Título)</option>
-      <option value="genre">🎸 Ordenar por: Género / Estilo</option>
-      <option value="owner">👤 Ordenar por: Propietario</option>
-    </select>
+    
+    <div class="filter-row">
+      <select id="filter-owner" onchange="window.renderCollection()">
+        <option value="all">👤 Todos los propietarios</option>
+        <option value="Manu">🙋‍♂️ Solo Manu</option>
+        <option value="Papá">👨‍👦 Solo Papá</option>
+        <option value="De Ambos">🤝 De Ambos</option>
+      </select>
+
+      <select id="sort-select" onchange="window.renderCollection()">
+        <option value="newest">📅 Ordenar por: Más recientes</option>
+        <option value="title">🅰️ Ordenar por: Nombre</option>
+        <option value="genre">🎸 Ordenar por: Género</option>
+        <option value="owner">👤 Ordenar por: Propietario</option>
+      </select>
+    </div>
   </div>
 
   <div id="alphabet-nav" class="alphabet-nav"></div>
@@ -483,6 +498,7 @@
     window.renderCollection = function() {
       const grid = document.getElementById('album-grid');
       const sortType = document.getElementById('sort-select').value;
+      const ownerFilter = document.getElementById('filter-owner').value;
       const alphabetNav = document.getElementById('alphabet-nav');
       
       grid.innerHTML = '';
@@ -494,7 +510,19 @@
         return;
       }
 
-      let sortedCollection = [...window.vinylCollection];
+      // Filtrar por propietario según la selección
+      let filteredCollection = window.vinylCollection.filter(item => {
+        if (ownerFilter === 'all') return true;
+        return item.owner === ownerFilter;
+      });
+
+      if (filteredCollection.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">No hay vinilos de "${ownerFilter}".</p>`;
+        alphabetNav.style.display = 'none';
+        return;
+      }
+
+      let sortedCollection = [...filteredCollection];
 
       if (sortType === 'title') {
         sortedCollection.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
