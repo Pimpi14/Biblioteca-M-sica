@@ -77,13 +77,30 @@
     button.secondary { background-color: #333; }
     button.btn-tidal { background-color: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 6px; }
     
+    /* Contenedor del Buscador compatible con iPhone / iOS */
+    .search-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .search-wrapper .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      pointer-events: none;
+      z-index: 2;
+    }
     .search-box {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
       background-color: var(--card-bg);
       color: var(--text);
       border: 1px solid #333;
-      padding: 10px 15px;
+      padding: 10px 15px 10px 38px;
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 16px; /* Evita auto-zoom en Safari iOS */
       width: 100%;
       box-sizing: border-box;
       outline: none;
@@ -98,6 +115,7 @@
     }
 
     select {
+      -webkit-appearance: none;
       background-color: var(--card-bg);
       color: var(--text);
       border: 1px solid #333;
@@ -232,7 +250,7 @@
     .btn-edit { background-color: #333; }
     .btn-delete { background-color: var(--danger); }
 
-    /* Vista de Listado en Filas (Tabla de texto) */
+    /* Vista de Listado en Filas */
     .list-view {
       display: flex;
       flex-direction: column;
@@ -342,9 +360,9 @@
     .input-group input, .input-group select {
       width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #333;
       background-color: #222; color: #fff; box-sizing: border-box;
+      -webkit-appearance: none;
     }
 
-    /* Estilos para lista de selección de múltiples ediciones */
     .results-list-container {
       max-height: 300px;
       overflow-y: auto;
@@ -393,7 +411,6 @@
       font-size: 10px;
     }
 
-    /* Estilos para el Modal de Detalle (Tracklist y Notas) */
     .detail-cover {
       width: 150px;
       height: 150px;
@@ -442,8 +459,11 @@
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
     
-    <!-- Lupa / Buscador -->
-    <input type="text" id="search-input" class="search-box" placeholder="🔍 Buscar por grupo o disco..." oninput="window.renderCollection()">
+    <!-- Lupa / Buscador adaptado a iOS iPhone -->
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" class="search-box" placeholder="Buscar por grupo o disco..." oninput="window.renderCollection()">
+    </div>
 
     <div class="filter-row">
       <select id="filter-owner" onchange="window.renderCollection()">
@@ -506,9 +526,7 @@
     <div class="modal-content">
       <h3>Elige la edición correcta</h3>
       <p style="font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 8px;">Se han encontrado varias opciones con este código en Discogs. Pulsa sobre la tuya:</p>
-      <div id="edition-results-list" class="results-list-container">
-        <!-- Se rellena dinámicamente -->
-      </div>
+      <div id="edition-results-list" class="results-list-container"></div>
       <div class="modal-buttons" style="margin-top: 15px;">
         <button onclick="window.closeEditionModal()" class="secondary">Cancelar</button>
       </div>
@@ -535,7 +553,6 @@
       <img id="det-cover" class="detail-cover" src="" alt="Portada">
       <div id="det-info" style="font-size: 11px; color: var(--text-sub); line-height: 1.4;"></div>
       
-      <!-- Botón para abrir en Tidal -->
       <div style="margin-top: 10px;">
         <button id="btn-open-tidal" class="btn-tidal" onclick="window.openInTidal()">🎵 Abrir y escuchar en Tidal</button>
       </div>
@@ -705,7 +722,6 @@
         return;
       }
 
-      // Aplicar filtros de Propietario y Búsqueda por texto (Grupo o Disco)
       let filteredCollection = window.vinylCollection.filter(item => {
         const matchesOwner = (ownerFilter === 'all') || (item.owner === ownerFilter);
         const matchesSearch = !searchQuery || (item.title || '').toLowerCase().includes(searchQuery);
