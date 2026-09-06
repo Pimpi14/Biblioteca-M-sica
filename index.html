@@ -77,6 +77,21 @@
     button.secondary { background-color: #333; }
     button.btn-tidal { background-color: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 6px; }
     
+    .search-box {
+      background-color: var(--card-bg);
+      color: var(--text);
+      border: 1px solid #333;
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .search-box:focus {
+      border-color: var(--primary);
+    }
+
     .filter-row {
       display: flex;
       gap: 8px;
@@ -427,6 +442,9 @@
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
     
+    <!-- Lupa / Buscador -->
+    <input type="text" id="search-input" class="search-box" placeholder="🔍 Buscar por grupo o disco..." oninput="window.renderCollection()">
+
     <div class="filter-row">
       <select id="filter-owner" onchange="window.renderCollection()">
         <option value="all">👤 Todos los propietarios</option>
@@ -669,6 +687,7 @@
       const grid = document.getElementById('album-grid');
       const sortType = document.getElementById('sort-select').value;
       const ownerFilter = document.getElementById('filter-owner').value;
+      const searchQuery = document.getElementById('search-input') ? document.getElementById('search-input').value.toLowerCase().trim() : '';
       const alphabetNav = document.getElementById('alphabet-nav');
       
       grid.innerHTML = '';
@@ -686,13 +705,15 @@
         return;
       }
 
+      // Aplicar filtros de Propietario y Búsqueda por texto (Grupo o Disco)
       let filteredCollection = window.vinylCollection.filter(item => {
-        if (ownerFilter === 'all') return true;
-        return item.owner === ownerFilter;
+        const matchesOwner = (ownerFilter === 'all') || (item.owner === ownerFilter);
+        const matchesSearch = !searchQuery || (item.title || '').toLowerCase().includes(searchQuery);
+        return matchesOwner && matchesSearch;
       });
 
       if (filteredCollection.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">No hay vinilos de "${ownerFilter}".</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">No se encontraron vinilos que coincidan con la búsqueda.</p>`;
         alphabetNav.style.display = 'none';
         return;
       }
