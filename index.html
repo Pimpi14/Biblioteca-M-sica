@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Colección de Vinilos</title>
+  <title>Nuestros Vinilos</title>
   <!-- Librería para lectura de códigos de barras -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
@@ -52,9 +52,8 @@
       cursor: pointer;
       font-size: 14px;
     }
-    button.secondary {
-      background-color: #333;
-    }
+    button.secondary { background-color: #333; }
+    
     select {
       background-color: var(--card-bg);
       color: var(--text);
@@ -103,7 +102,7 @@
       margin-bottom: 20px;
     }
     
-    /* Cuadrícula con imágenes MÁS PEQUEÑAS */
+    /* Cuadrícula compacta */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -202,37 +201,25 @@
       gap: 10px;
       margin-top: 15px;
     }
-    .input-group {
-      margin-bottom: 10px;
-    }
-    .input-group label {
-      display: block;
-      font-size: 12px;
-      color: var(--text-sub);
-      margin-bottom: 3px;
-    }
+    .input-group { margin-bottom: 10px; }
+    .input-group label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 3px; }
     .input-group input, .input-group select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #333;
-      background-color: #222;
-      color: #fff;
-      box-sizing: border-box;
+      width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #333;
+      background-color: #222; color: #fff; box-sizing: border-box;
     }
   </style>
 </head>
 <body>
 
-  <h1>🎵 Colección de Vinilos</h1>
-  <p class="subtitle">Escanea y organiza tus discos con Discogs</p>
+  <h1>🎵 Nuestros Vinilos</h1>
+  <p class="subtitle">Colección sincronizada en la nube</p>
 
   <div class="controls">
     <div class="btn-group">
-      <button id="btn-scan" onclick="startScanner()">📷 Escanear Código</button>
-      <button id="btn-stop" class="secondary" onclick="stopScanner()" style="display:none;">Cancelar</button>
+      <button id="btn-scan" onclick="window.startScanner()">📷 Escanear Código</button>
+      <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar</button>
     </div>
-    <select id="sort-select" onchange="renderCollection()">
+    <select id="sort-select" onchange="window.renderCollection()">
       <option value="newest">📅 Ordenar por: Más recientes</option>
       <option value="title">🅰️ Ordenar por: Nombre (Artista/Título)</option>
       <option value="genre">🎸 Ordenar por: Género</option>
@@ -240,7 +227,6 @@
     </select>
   </div>
 
-  <!-- Navegación Abecedario A-Z -->
   <div id="alphabet-nav" class="alphabet-nav"></div>
 
   <div id="scanner-container">
@@ -248,7 +234,7 @@
   </div>
 
   <div class="grid" id="album-grid">
-    <!-- Colección guardada -->
+    <p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">Cargando colección...</p>
   </div>
 
   <!-- Modal para seleccionar Propietario -->
@@ -257,9 +243,9 @@
       <h3>¿De quién es este vinilo?</h3>
       <p id="modal-album-title" style="font-size: 13px; color: var(--text-sub);"></p>
       <div class="modal-buttons">
-        <button onclick="saveVinylWithOwner('Mío')">🙋‍♂️ Mío</button>
-        <button onclick="saveVinylWithOwner('Padre')">👨‍👦 De mi Padre</button>
-        <button onclick="saveVinylWithOwner('Ambos')" class="secondary">🤝 De Ambos</button>
+        <button onclick="window.saveVinylWithOwner('Mío')">🙋‍♂️ Mío</button>
+        <button onclick="window.saveVinylWithOwner('Padre')">👨‍👦 De mi Padre</button>
+        <button onclick="window.saveVinylWithOwner('Ambos')" class="secondary">🤝 De Ambos</button>
       </div>
     </div>
   </div>
@@ -297,21 +283,62 @@
         <input type="text" id="edit-label">
       </div>
       <div class="modal-buttons">
-        <button onclick="saveEditedVinyl()">Guardar Cambios</button>
-        <button onclick="closeEditModal()" class="secondary">Cancelar</button>
+        <button onclick="window.saveEditedVinyl()">Guardar Cambios</button>
+        <button onclick="window.closeEditModal()" class="secondary">Cancelar</button>
       </div>
     </div>
   </div>
 
-  <script>
-    let html5QrcodeScanner = null;
-    let collection = JSON.parse(localStorage.getItem('my_vinyl_collection')) || [];
+  <!-- Script Principal usando Firebase Modular -->
+  <script type="module">
+    // 1. Importar Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, serverTimestamp } 
+    from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // 2. Tu configuración exacta
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPPhFMzBM2ZjvdeY4Jg0bmTdiIrvHG40w",
+      authDomain: "vinilos-caso-lopez.firebaseapp.com",
+      projectId: "vinilos-caso-lopez",
+      storageBucket: "vinilos-caso-lopez.firebasestorage.app",
+      messagingSenderId: "567342288486",
+      appId: "1:567342288486:web:6809f797d2a1ac78cc27a7",
+      measurementId: "G-KBVT33FQKE"
+    };
+
+    // 3. Inicializar App y Base de datos
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const vinilosRef = collection(db, "vinilos");
+
+    // Variables globales
+    window.vinylCollection = [];
     let pendingVinyl = null; 
-    let editingIndex = null;
+    let editingId = null;
+    let html5QrcodeScanner = null;
 
-    document.addEventListener("DOMContentLoaded", renderCollection);
+    // 4. Sincronización en Tiempo Real con Firebase
+    onSnapshot(vinilosRef, (snapshot) => {
+      window.vinylCollection = [];
+      snapshot.forEach((docSnap) => {
+        // Guardamos los datos y el ID único del documento
+        window.vinylCollection.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      
+      // Ordenar por defecto por fecha de creación (los más recientes primero) si existe
+      window.vinylCollection.sort((a, b) => {
+        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
 
-    function renderCollection() {
+      window.renderCollection();
+    });
+
+    // --- FUNCIONES DE LA INTERFAZ ---
+
+    window.renderCollection = function() {
       const grid = document.getElementById('album-grid');
       const sortType = document.getElementById('sort-select').value;
       const alphabetNav = document.getElementById('alphabet-nav');
@@ -319,16 +346,16 @@
       grid.innerHTML = '';
       alphabetNav.innerHTML = '';
 
-      if (collection.length === 0) {
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">No hay vinilos guardados todavía.</p>';
+      if (window.vinylCollection.length === 0) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">No hay vinilos en la nube todavía.</p>';
         alphabetNav.style.display = 'none';
         return;
       }
 
-      let sortedCollection = [...collection];
+      let sortedCollection = [...window.vinylCollection];
 
       if (sortType === 'title') {
-        sortedCollection.sort((a, b) => a.title.localeCompare(b.title));
+        sortedCollection.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
         alphabetNav.style.display = 'flex';
         buildAlphabetNav(sortedCollection);
       } else {
@@ -343,11 +370,9 @@
       const assignedLetters = new Set();
 
       sortedCollection.forEach((item) => {
-        const originalIndex = collection.indexOf(item);
         const card = document.createElement('div');
         card.className = 'card';
 
-        // Asignar ID de la primera letra para el salto directo A-Z
         if (sortType === 'title') {
           const firstLetter = getCleanFirstLetter(item.title);
           if (!assignedLetters.has(firstLetter)) {
@@ -365,8 +390,8 @@
           <div class="card-detail"><b>Sello:</b> ${item.label || 'N/A'}</div>
           <div class="card-detail"><b>Género:</b> ${item.genre || 'N/A'}</div>
           <div class="card-actions">
-            <button class="btn-edit" onclick="openEditModal(${originalIndex})">✏️</button>
-            <button class="btn-delete" onclick="deleteVinyl(${originalIndex})">🗑️</button>
+            <button class="btn-edit" onclick="window.openEditModal('${item.id}')">✏️</button>
+            <button class="btn-delete" onclick="window.deleteVinyl('${item.id}')">🗑️</button>
           </div>
         `;
         grid.appendChild(card);
@@ -393,7 +418,10 @@
         btn.innerText = letter;
         
         if (existingLetters.has(letter)) {
-          btn.onclick = () => scrollToLetter(letter);
+          btn.onclick = () => {
+            const el = document.getElementById(`letter-${letter}`);
+            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          };
         } else {
           btn.className = 'disabled';
         }
@@ -401,14 +429,9 @@
       });
     }
 
-    function scrollToLetter(letter) {
-      const element = document.getElementById(`letter-${letter}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
+    // --- ESCÁNER Y DISCOGS ---
 
-    function startScanner() {
+    window.startScanner = function() {
       document.getElementById('scanner-container').style.display = 'block';
       document.getElementById('btn-scan').style.display = 'none';
       document.getElementById('btn-stop').style.display = 'block';
@@ -416,28 +439,19 @@
       html5QrcodeScanner = new Html5Qrcode("reader");
       
       const config = { 
-        fps: 15,
-        qrbox: { width: 300, height: 100 },
+        fps: 15, qrbox: { width: 300, height: 100 },
         formatsToSupport: [ 
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.EAN_8
+          Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E, Html5QrcodeSupportedFormats.EAN_8
         ],
         aspectRatio: 1.0
       };
       
-      html5QrcodeScanner.start(
-        { facingMode: "environment" }, 
-        config, 
-        onScanSuccess
-      ).catch(err => {
-        alert("Error al abrir la cámara: " + err);
-        stopScanner();
-      });
+      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch(err => { alert("Error al abrir cámara: " + err); window.stopScanner(); });
     }
 
-    function stopScanner() {
+    window.stopScanner = function() {
       if (html5QrcodeScanner) {
         html5QrcodeScanner.stop().then(() => {
           document.getElementById('scanner-container').style.display = 'none';
@@ -448,64 +462,68 @@
     }
 
     async function onScanSuccess(decodedText) {
-      stopScanner();
-      
+      window.stopScanner();
       const DISCOGS_TOKEN = "CWKqEUOhuHGVWlYnpZzwXXhiGSAqGjBUrbPiYEjM";
 
       try {
-        const response = await fetch(
-          `https://api.discogs.com/database/search?barcode=${decodedText}&type=release&token=${DISCOGS_TOKEN}`
-        );
+        const response = await fetch(`https://api.discogs.com/database/search?barcode=${decodedText}&type=release&token=${DISCOGS_TOKEN}`);
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
           const album = data.results[0];
-          
           pendingVinyl = {
             title: album.title,
             cover: album.cover_image || album.thumb,
             year: album.year || 'Desconocido',
             country: album.country || 'Desconocido',
             label: album.label ? album.label[0] : 'Desconocido',
-            genre: album.genre ? album.genre.join(', ') : 'Desconocido'
+            genre: album.genre ? album.genre.join(', ') : 'Desconocido',
+            createdAt: serverTimestamp() // Tiempo exacto de Firebase
           };
 
           document.getElementById('modal-album-title').innerText = pendingVinyl.title;
           document.getElementById('owner-modal').style.display = 'flex';
-
         } else {
           alert(`Código leído (${decodedText}), pero no se encontró ese vinilo en Discogs.`);
         }
       } catch (error) {
-        console.error(error);
         alert("Error al conectar con la base de datos de Discogs.");
       }
     }
 
-    function saveVinylWithOwner(owner) {
+    // --- OPERACIONES EN FIREBASE ---
+
+    window.saveVinylWithOwner = async function(owner) {
       if (pendingVinyl) {
         pendingVinyl.owner = owner;
-        collection.unshift(pendingVinyl);
-        localStorage.setItem('my_vinyl_collection', JSON.stringify(collection));
-        
-        pendingVinyl = null;
         document.getElementById('owner-modal').style.display = 'none';
         
-        renderCollection();
+        try {
+          // Guardar en la Nube
+          await addDoc(vinilosRef, pendingVinyl);
+          pendingVinyl = null;
+        } catch (e) {
+          alert("Error al guardar en la nube: " + e.message);
+        }
       }
     }
 
-    function deleteVinyl(index) {
-      if (confirm(`¿Seguro que quieres eliminar "${collection[index].title}"?`)) {
-        collection.splice(index, 1);
-        localStorage.setItem('my_vinyl_collection', JSON.stringify(collection));
-        renderCollection();
+    window.deleteVinyl = async function(id) {
+      const vinylToDel = window.vinylCollection.find(v => v.id === id);
+      if (vinylToDel && confirm(`¿Seguro que quieres eliminar "${vinylToDel.title}"?`)) {
+        try {
+          // Borrar de la nube
+          await deleteDoc(doc(db, "vinilos", id));
+        } catch (e) {
+          alert("Error al eliminar: " + e.message);
+        }
       }
     }
 
-    function openEditModal(index) {
-      editingIndex = index;
-      const item = collection[index];
+    window.openEditModal = function(id) {
+      editingId = id;
+      const item = window.vinylCollection.find(v => v.id === id);
+      if(!item) return;
 
       document.getElementById('edit-title').value = item.title || '';
       document.getElementById('edit-owner').value = item.owner || 'Mío';
@@ -517,23 +535,29 @@
       document.getElementById('edit-modal').style.display = 'flex';
     }
 
-    function closeEditModal() {
+    window.closeEditModal = function() {
       document.getElementById('edit-modal').style.display = 'none';
-      editingIndex = null;
+      editingId = null;
     }
 
-    function saveEditedVinyl() {
-      if (editingIndex !== null) {
-        collection[editingIndex].title = document.getElementById('edit-title').value;
-        collection[editingIndex].owner = document.getElementById('edit-owner').value;
-        collection[editingIndex].genre = document.getElementById('edit-genre').value;
-        collection[editingIndex].year = document.getElementById('edit-year').value;
-        collection[editingIndex].country = document.getElementById('edit-country').value;
-        collection[editingIndex].label = document.getElementById('edit-label').value;
+    window.saveEditedVinyl = async function() {
+      if (editingId !== null) {
+        const updatedData = {
+          title: document.getElementById('edit-title').value,
+          owner: document.getElementById('edit-owner').value,
+          genre: document.getElementById('edit-genre').value,
+          year: document.getElementById('edit-year').value,
+          country: document.getElementById('edit-country').value,
+          label: document.getElementById('edit-label').value
+        };
 
-        localStorage.setItem('my_vinyl_collection', JSON.stringify(collection));
-        closeEditModal();
-        renderCollection();
+        try {
+          // Actualizar en la Nube
+          await updateDoc(doc(db, "vinilos", editingId), updatedData);
+          window.closeEditModal();
+        } catch (e) {
+          alert("Error al actualizar: " + e.message);
+        }
       }
     }
   </script>
