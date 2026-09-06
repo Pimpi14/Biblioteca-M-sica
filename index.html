@@ -216,8 +216,8 @@
 
   <div class="controls">
     <div class="btn-group">
-      <button id="btn-scan" onclick="window.startScanner()">📷 Escanear Código</button>
-      <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar</button>
+      <button onclick="window.openAddOptions()">📷 Añadir Vinilo</button>
+      <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
     <select id="sort-select" onchange="window.renderCollection()">
       <option value="newest">📅 Ordenar por: Más recientes</option>
@@ -235,6 +235,35 @@
 
   <div class="grid" id="album-grid">
     <p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">Cargando colección...</p>
+  </div>
+
+  <!-- Modal para Elegir Método de Añadir -->
+  <div id="add-options-modal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h3>Añadir Vinilo</h3>
+      <p style="font-size: 13px; color: var(--text-sub);">¿Cómo quieres identificar el disco?</p>
+      <div class="modal-buttons">
+        <button onclick="window.startScanner()">📷 Escanear Código de Barras</button>
+        <button onclick="window.openCatalogModal()" class="secondary">⌨️ Escribir Matriz / Ref / Catálogo</button>
+        <button onclick="window.closeAddOptionsModal()" style="background-color: #333;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Escribir Código de Matriz/Catálogo -->
+  <div id="catalog-modal" class="modal">
+    <div class="modal-content">
+      <h3>Buscar por Catálogo / Matriz</h3>
+      <p style="font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 12px;">Introduce el código impreso en la contraportada o grabado en el surco.</p>
+      <div class="input-group">
+        <label>Código (ej: CBS 460611 1):</label>
+        <input type="text" id="manual-catalog-code" placeholder="Ej: ST-512">
+      </div>
+      <div class="modal-buttons">
+        <button onclick="window.searchByCatalog()">Buscar en Discogs</button>
+        <button onclick="window.closeCatalogModal()" class="secondary">Cancelar</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal para seleccionar Propietario -->
@@ -336,6 +365,24 @@
 
     // --- FUNCIONES DE LA INTERFAZ ---
 
+    window.openAddOptions = function() {
+      document.getElementById('add-options-modal').style.display = 'flex';
+    }
+
+    window.closeAddOptionsModal = function() {
+      document.getElementById('add-options-modal').style.display = 'none';
+    }
+
+    window.openCatalogModal = function() {
+      window.closeAddOptionsModal();
+      document.getElementById('manual-catalog-code').value = '';
+      document.getElementById('catalog-modal').style.display = 'flex';
+    }
+
+    window.closeCatalogModal = function() {
+      document.getElementById('catalog-modal').style.display = 'none';
+    }
+
     window.renderCollection = function() {
       const grid = document.getElementById('album-grid');
       const sortType = document.getElementById('sort-select').value;
@@ -430,8 +477,8 @@
     // --- ESCÁNER Y DISCOGS ---
 
     window.startScanner = function() {
+      window.closeAddOptionsModal();
       document.getElementById('scanner-container').style.display = 'block';
-      document.getElementById('btn-scan').style.display = 'none';
       document.getElementById('btn-stop').style.display = 'block';
 
       html5QrcodeScanner = new Html5Qrcode("reader");
@@ -453,7 +500,6 @@
       if (html5QrcodeScanner) {
         html5QrcodeScanner.stop().then(() => {
           document.getElementById('scanner-container').style.display = 'none';
-          document.getElementById('btn-scan').style.display = 'block';
           document.getElementById('btn-stop').style.display = 'none';
         }).catch(() => {});
       }
@@ -461,10 +507,24 @@
 
     async function onScanSuccess(decodedText) {
       window.stopScanner();
+      await fetchDiscogs(`barcode=${decodedText}`);
+    }
+
+    window.searchByCatalog = async function() {
+      const code = document.getElementById('manual-catalog-code').value.trim();
+      if (!code) {
+        alert("Por favor, escribe un código válido.");
+        return;
+      }
+      window.closeCatalogModal();
+      await fetchDiscogs(`catno=${encodeURIComponent(code)}`);
+    }
+
+    async function fetchDiscogs(queryParams) {
       const DISCOGS_TOKEN = "CWKqEUOhuHGVWlYnpZzwXXhiGSAqGjBUrbPiYEjM";
 
       try {
-        const response = await fetch(`https://api.discogs.com/database/search?barcode=${decodedText}&type=release&token=${DISCOGS_TOKEN}`);
+        const response = await fetch(`https://api.discogs.com/database/search?${queryParams}&type=release&token=${DISCOGS_TOKEN}`);
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
@@ -482,7 +542,7 @@
           document.getElementById('modal-album-title').innerText = pendingVinyl.title;
           document.getElementById('owner-modal').style.display = 'flex';
         } else {
-          alert(`Código leído (${decodedText}), pero no se encontró ese vinilo en Discogs.`);
+          alert(`No se encontró ningún vinilo con ese código en Discogs.`);
         }
       } catch (error) {
         alert("Error al conectar con la base de datos de Discogs.");
