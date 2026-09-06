@@ -15,6 +15,7 @@
       --text-sub: #b3b3b3;
       --accent: #ff9800;
       --danger: #e91e63;
+      --tidal: #000000;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -75,6 +76,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     button.secondary { background-color: #333; }
+    button.btn-tidal { background-color: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 6px; }
     
     select {
       background-color: var(--card-bg);
@@ -266,7 +268,7 @@
     }
     .tracklist-container {
       font-size: 11px;
-      max-height: 150px;
+      max-height: 120px;
       overflow-y: auto;
       background: #121212;
       padding: 8px;
@@ -353,24 +355,29 @@
     </div>
   </div>
 
-  <!-- Modal para Detalle Completo (Tracklist y Notas) -->
+  <!-- Modal para Detalle Completo (Tracklist, Notas y Tidal) -->
   <div id="detail-modal" class="modal" onclick="if(event.target === this) window.closeDetailModal()">
     <div class="modal-content">
       <h3 id="det-title" style="margin-bottom: 6px;">Título del disco</h3>
       <img id="det-cover" class="detail-cover" src="" alt="Portada">
       <div id="det-info" style="font-size: 11px; color: var(--text-sub); line-height: 1.4;"></div>
       
+      <!-- Botón para abrir en Tidal -->
+      <div style="margin-top: 10px;">
+        <button id="btn-open-tidal" class="btn-tidal" onclick="window.openInTidal()">🎵 Abrir y escuchar en Tidal</button>
+      </div>
+
       <div class="detail-section-title">🎵 Listado de Canciones (Tracklist)</div>
       <div id="det-tracklist" class="tracklist-container">
         <p style="color: var(--text-sub); text-align:center; margin: 10px 0;">Sin pistas registradas</p>
       </div>
 
       <div class="detail-section-title">📝 Notas de la Edición</div>
-      <div id="det-notes" style="font-size: 10px; color: var(--text-sub); max-height: 80px; overflow-y: auto; background: #121212; padding: 6px; border-radius: 6px; border: 1px solid #282828;">
+      <div id="det-notes" style="font-size: 10px; color: var(--text-sub); max-height: 70px; overflow-y: auto; background: #121212; padding: 6px; border-radius: 6px; border: 1px solid #282828;">
         Sin notas adicionales
       </div>
 
-      <div class="modal-buttons" style="margin-top: 12px;">
+      <div class="modal-buttons" style="margin-top: 10px;">
         <button onclick="window.closeDetailModal()" class="secondary">Cerrar</button>
       </div>
     </div>
@@ -438,6 +445,7 @@
     window.vinylCollection = [];
     let pendingVinyl = null; 
     let editingId = null;
+    let currentAlbumTitleForTidal = "";
     let html5QrcodeScanner = null;
 
     onSnapshot(vinilosRef, (snapshot) => {
@@ -639,7 +647,7 @@
               if (detailData.genres && detailData.styles) {
                 combinedGenres = [...detailData.genres, ...detailData.styles].join(', ');
               } else if (detailData.genre && detailData.style) {
-                combinedGenres = [...detailData.genre, ...detailData.style].join(', ');
+                combinedGenres = [...detailData.genre, ...detailData.style].join(',؍].join(', ');
               }
               if (detailData.tracklist) {
                 tracklistData = detailData.tracklist;
@@ -692,7 +700,9 @@
       const item = window.vinylCollection.find(v => v.id === id);
       if (!item) return;
 
-      document.getElementById('det-title').innerText = item.title || 'Sin Título';
+      currentAlbumTitleForTidal = item.title || '';
+
+      document.getElementById('det-title').innerText = currentAlbumTitleForTidal;
       document.getElementById('det-cover').src = item.cover || 'https://via.placeholder.com/150?text=Sin+Portada';
       
       document.getElementById('det-info').innerHTML = `
@@ -720,6 +730,17 @@
 
       document.getElementById('det-notes').innerText = item.notes || 'Sin notas adicionales';
       document.getElementById('detail-modal').style.display = 'flex';
+    }
+
+    window.openInTidal = function() {
+      if (!currentAlbumTitleForTidal) return;
+      const query = encodeURIComponent(currentAlbumTitleForTidal);
+      
+      // Enlace universal de Tidal para buscar el álbum
+      const tidalUrl = `https://listen.tidal.com/search?q=${query}`;
+      
+      // Intenta abrir la app de Tidal o redirige a la web si no está instalada
+      window.location.href = tidalUrl;
     }
 
     window.closeDetailModal = function() {
@@ -752,7 +773,7 @@
       document.getElementById('edit-modal').style.display = 'flex';
     }
 
-    window.closeEditModal = function() {
+    window.closeEditModal = function(id) {
       document.getElementById('edit-modal').style.display = 'none';
       editingId = null;
     }
