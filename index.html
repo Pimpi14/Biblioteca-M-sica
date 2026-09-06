@@ -364,7 +364,7 @@
     }
 
     .results-list-container {
-      max-height: 300px;
+      max-height: 350px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -499,8 +499,25 @@
       <p style="font-size: 13px; color: var(--text-sub);">¿Cómo quieres identificar el disco?</p>
       <div class="modal-buttons">
         <button onclick="window.startScanner()">📷 Escanear Código de Barras</button>
-        <button onclick="window.openCatalogModal()" class="secondary">⌨️ Escribir Matriz / Ref / Catálogo</button>
+        <button onclick="window.openSearchTextModal()">🔍 Buscar por Título / Artista</button>
+        <button onclick="window.openCatalogModal()" class="secondary">⌨️ Escribir Ref. de Catálogo</button>
         <button onclick="window.closeAddOptionsModal()" style="background-color: #333;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Búsqueda Libre (Título / Artista) -->
+  <div id="search-text-modal" class="modal">
+    <div class="modal-content">
+      <h3>Buscar por Título / Artista</h3>
+      <p style="font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 12px;">Introduce el nombre del grupo y/o el título del álbum.</p>
+      <div class="input-group">
+        <label>Búsqueda (ej: Pink Floyd The Wall):</label>
+        <input type="text" id="manual-search-text" placeholder="Ej: Beatles Abbey Road">
+      </div>
+      <div class="modal-buttons">
+        <button onclick="window.searchByText()">Buscar en Discogs</button>
+        <button onclick="window.closeSearchTextModal()" class="secondary">Cancelar</button>
       </div>
     </div>
   </div>
@@ -525,7 +542,7 @@
   <div id="select-edition-modal" class="modal">
     <div class="modal-content">
       <h3>Elige la edición correcta</h3>
-      <p style="font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 8px;">Se han encontrado varias opciones con este código en Discogs. Pulsa sobre la tuya:</p>
+      <p style="font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 8px;">Se han encontrado varias opciones en Discogs. Pulsa sobre la tuya:</p>
       <div id="edition-results-list" class="results-list-container"></div>
       <div class="modal-buttons" style="margin-top: 15px;">
         <button onclick="window.closeEditionModal()" class="secondary">Cancelar</button>
@@ -683,6 +700,27 @@
 
     window.closeCatalogModal = function() {
       document.getElementById('catalog-modal').style.display = 'none';
+    }
+
+    /* Búsqueda por Texto (Nueva Función) */
+    window.openSearchTextModal = function() {
+      window.closeAddOptionsModal();
+      document.getElementById('manual-search-text').value = '';
+      document.getElementById('search-text-modal').style.display = 'flex';
+    }
+
+    window.closeSearchTextModal = function() {
+      document.getElementById('search-text-modal').style.display = 'none';
+    }
+
+    window.searchByText = async function() {
+      const query = document.getElementById('manual-search-text').value.trim();
+      if (!query) {
+        alert("Por favor, escribe un título o artista válido.");
+        return;
+      }
+      window.closeSearchTextModal();
+      await fetchDiscogs(`q=${encodeURIComponent(query)}`);
     }
 
     window.closeEditionModal = function() {
@@ -925,7 +963,7 @@
             document.getElementById('select-edition-modal').style.display = 'flex';
           }
         } else {
-          alert(`No se encontró ningún vinilo con ese código en Discogs.`);
+          alert(`No se encontró ningún vinilo con esos datos en Discogs.`);
         }
       } catch (error) {
         alert("Error al conectar con la base de datos de Discogs.");
