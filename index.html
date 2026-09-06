@@ -132,7 +132,7 @@
       z-index: 1;
     }
     
-    /* Cuadrícula compacta */
+    /* Cuadrícula compacta (Miniaturas) */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -217,6 +217,83 @@
     .btn-edit { background-color: #333; }
     .btn-delete { background-color: var(--danger); }
 
+    /* Vista de Listado en Filas (Tabla de texto) */
+    .list-view {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      max-width: 900px;
+      z-index: 1;
+    }
+    .list-row {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s ease;
+    }
+    .list-row:hover {
+      background-color: #222;
+    }
+    .list-row img {
+      width: 45px;
+      height: 45px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+    .list-row-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .list-row-title {
+      font-weight: bold;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .list-row-sub {
+      font-size: 10px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .list-row-owner {
+      background-color: rgba(0, 0, 0, 0.85);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: bold;
+      border: 1px solid var(--accent);
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+    .list-row-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      z-index: 3;
+    }
+    .list-row-actions button {
+      padding: 4px 8px;
+      font-size: 10px;
+      border-radius: 4px;
+    }
+
     /* Modales */
     .modal {
       display: none;
@@ -250,6 +327,55 @@
     .input-group input, .input-group select {
       width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #333;
       background-color: #222; color: #fff; box-sizing: border-box;
+    }
+
+    /* Estilos para lista de selección de múltiples ediciones */
+    .results-list-container {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .result-item {
+      display: flex;
+      gap: 10px;
+      background: #222;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid #333;
+      align-items: center;
+      transition: background 0.1s ease;
+    }
+    .result-item:hover {
+      background: #2a2a2a;
+      border-color: var(--primary);
+    }
+    .result-item img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .result-item-info {
+      font-size: 11px;
+      color: var(--text);
+      overflow: hidden;
+    }
+    .result-item-title {
+      font-weight: bold;
+      margin-bottom: 2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .result-item-sub {
+      color: var(--text-sub);
+      font-size: 10px;
     }
 
     /* Estilos para el Modal de Detalle (Tracklist y Notas) */
@@ -297,6 +423,7 @@
   <div class="controls">
     <div class="btn-group">
       <button onclick="window.openAddOptions()">📷 Añadir Vinilo</button>
+      <button id="btn-toggle-view" class="secondary" onclick="window.toggleViewMode()">📄 Ver como Listado</button>
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
     
@@ -352,6 +479,20 @@
       <div class="modal-buttons">
         <button onclick="window.searchByCatalog()">Buscar en Discogs</button>
         <button onclick="window.closeCatalogModal()" class="secondary">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Seleccionar entre múltiples ediciones encontradas -->
+  <div id="select-edition-modal" class="modal">
+    <div class="modal-content">
+      <h3>Elige la edición correcta</h3>
+      <p style="font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 8px;">Se han encontrado varias opciones con este código en Discogs. Pulsa sobre la tuya:</p>
+      <div id="edition-results-list" class="results-list-container">
+        <!-- Se rellena dinámicamente -->
+      </div>
+      <div class="modal-buttons" style="margin-top: 15px;">
+        <button onclick="window.closeEditionModal()" class="secondary">Cancelar</button>
       </div>
     </div>
   </div>
@@ -452,30 +593,44 @@
       measurementId: "G-KBVT33FQKE"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const vinilosRef = collection(db, "vinilos");
+    let db;
+    let vinilosRef;
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      vinilosRef = collection(db, "vinilos");
+    } catch (e) {
+      console.error("Error al inicializar Firebase:", e);
+      document.getElementById('album-grid').innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: var(--danger);">Error al conectar con Firebase: ${e.message}</p>`;
+    }
 
     window.vinylCollection = [];
     let pendingVinyl = null; 
     let editingId = null;
     let currentAlbumTitleForTidal = "";
     let html5QrcodeScanner = null;
+    let isListView = false;
 
-    onSnapshot(vinilosRef, (snapshot) => {
-      window.vinylCollection = [];
-      snapshot.forEach((docSnap) => {
-        window.vinylCollection.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      
-      window.vinylCollection.sort((a, b) => {
-        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
-        return timeB - timeA;
-      });
+    if (vinilosRef) {
+      onSnapshot(vinilosRef, (snapshot) => {
+        window.vinylCollection = [];
+        snapshot.forEach((docSnap) => {
+          window.vinylCollection.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        
+        window.vinylCollection.sort((a, b) => {
+          const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+          const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+          return timeB - timeA;
+        });
 
-      window.renderCollection();
-    });
+        window.renderCollection();
+      }, (error) => {
+        console.error("Error en la conexión con Firestore:", error);
+        document.getElementById('album-grid').innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: var(--danger);">Error de permisos o conexión con Firestore. Revisa las reglas de seguridad en Firebase.</p>`;
+      });
+    }
 
     window.openAddOptions = function() {
       document.getElementById('add-options-modal').style.display = 'flex';
@@ -495,6 +650,21 @@
       document.getElementById('catalog-modal').style.display = 'none';
     }
 
+    window.closeEditionModal = function() {
+      document.getElementById('select-edition-modal').style.display = 'none';
+    }
+
+    window.toggleViewMode = function() {
+      isListView = !isListView;
+      const btnToggle = document.getElementById('btn-toggle-view');
+      if (isListView) {
+        btnToggle.innerText = "🖼️ Ver como Miniaturas";
+      } else {
+        btnToggle.innerText = "📄 Ver como Listado";
+      }
+      window.renderCollection();
+    }
+
     window.renderCollection = function() {
       const grid = document.getElementById('album-grid');
       const sortType = document.getElementById('sort-select').value;
@@ -504,13 +674,18 @@
       grid.innerHTML = '';
       alphabetNav.innerHTML = '';
 
+      if (isListView) {
+        grid.className = 'list-view';
+      } else {
+        grid.className = 'grid';
+      }
+
       if (window.vinylCollection.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: #b3b3b3;">No hay vinilos en la nube todavía.</p>';
         alphabetNav.style.display = 'none';
         return;
       }
 
-      // Filtrar por propietario según la selección
       let filteredCollection = window.vinylCollection.filter(item => {
         if (ownerFilter === 'all') return true;
         return item.owner === ownerFilter;
@@ -540,36 +715,67 @@
       const assignedLetters = new Set();
 
       sortedCollection.forEach((item) => {
-        const card = document.createElement('div');
-        card.className = 'card';
+        const element = document.createElement('div');
         
-        card.onclick = (e) => {
-          if (e.target.tagName === 'BUTTON' || e.target.closest('.card-actions')) return;
-          window.openDetailModal(item.id);
-        };
+        if (isListView) {
+          element.className = 'list-row';
+          element.onclick = (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('.list-row-actions')) return;
+            window.openDetailModal(item.id);
+          };
 
-        if (sortType === 'title') {
-          const firstLetter = getCleanFirstLetter(item.title);
-          if (!assignedLetters.has(firstLetter)) {
-            card.id = `letter-${firstLetter}`;
-            assignedLetters.add(firstLetter);
+          if (sortType === 'title') {
+            const firstLetter = getCleanFirstLetter(item.title);
+            if (!assignedLetters.has(firstLetter)) {
+              element.id = `letter-${firstLetter}`;
+              assignedLetters.add(firstLetter);
+            }
           }
-        }
 
-        card.innerHTML = `
-          <img src="${item.cover || 'https://via.placeholder.com/150?text=Sin+Portada'}" alt="Portada">
-          <span class="owner-tag">👤 ${item.owner || 'N/A'}</span>
-          <div class="card-title">${item.title}</div>
-          <div class="card-detail"><b>Año:</b> ${item.year || 'N/A'}</div>
-          <div class="card-detail"><b>País:</b> ${item.country || 'N/A'}</div>
-          <div class="card-detail"><b>Sello:</b> ${item.label || 'N/A'}</div>
-          <div class="card-detail" title="${item.genre || 'N/A'}"><b>Género/Estilo:</b> ${item.genre || 'N/A'}</div>
-          <div class="card-actions">
-            <button class="btn-edit" onclick="window.openEditModal('${item.id}')">✏️</button>
-            <button class="btn-delete" onclick="window.deleteVinyl('${item.id}')">🗑️</button>
-          </div>
-        `;
-        grid.appendChild(card);
+          element.innerHTML = `
+            <img src="${item.cover || 'https://via.placeholder.com/50?text=Sin+Portada'}" alt="Portada">
+            <div class="list-row-info">
+              <div class="list-row-title">${item.title}</div>
+              <div class="list-row-sub">📅 ${item.year || 'N/A'} | 🌍 ${item.country || 'N/A'} | 🏷️ ${item.label || 'N/A'}</div>
+              <div class="list-row-sub">🎸 ${item.genre || 'N/A'}</div>
+            </div>
+            <span class="list-row-owner">👤 ${item.owner || 'N/A'}</span>
+            <div class="list-row-actions">
+              <button class="btn-edit" onclick="window.openEditModal('${item.id}')">✏️</button>
+              <button class="btn-delete" onclick="window.deleteVinyl('${item.id}')">🗑️</button>
+            </div>
+          `;
+        } else {
+          element.className = 'card';
+          element.onclick = (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('.card-actions')) return;
+            window.openDetailModal(item.id);
+          };
+
+          if (sortType === 'title') {
+            const firstLetter = getCleanFirstLetter(item.title);
+            if (!assignedLetters.has(firstLetter)) {
+              element.id = `letter-${firstLetter}`;
+              assignedLetters.add(firstLetter);
+            }
+          }
+
+          element.innerHTML = `
+            <img src="${item.cover || 'https://via.placeholder.com/150?text=Sin+Portada'}" alt="Portada">
+            <span class="owner-tag">👤 ${item.owner || 'N/A'}</span>
+            <div class="card-title">${item.title}</div>
+            <div class="card-detail"><b>Año:</b> ${item.year || 'N/A'}</div>
+            <div class="card-detail"><b>País:</b> ${item.country || 'N/A'}</div>
+            <div class="card-detail"><b>Sello:</b> ${item.label || 'N/A'}</div>
+            <div class="card-detail" title="${item.genre || 'N/A'}"><b>Género/Estilo:</b> ${item.genre || 'N/A'}</div>
+            <div class="card-actions">
+              <button class="btn-edit" onclick="window.openEditModal('${item.id}')">✏️</button>
+              <button class="btn-delete" onclick="window.deleteVinyl('${item.id}')">🗑️</button>
+            </div>
+          `;
+        }
+        
+        grid.appendChild(element);
       });
     }
 
@@ -656,57 +862,84 @@
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
-          const album = data.results[0];
-          
-          let genresList = album.genre || [];
-          let stylesList = album.style || [];
-          let combinedGenres = [...genresList, ...stylesList].join(', ');
-          if (!combinedGenres) combinedGenres = 'Desconocido';
+          if (data.results.length === 1) {
+            await selectAlbumEdition(data.results[0]);
+          } else {
+            const resultsListContainer = document.getElementById('edition-results-list');
+            resultsListContainer.innerHTML = '';
 
-          let tracklistData = [];
-          let releaseNotes = "Sin notas adicionales";
+            data.results.forEach((album) => {
+              const itemDiv = document.createElement('div');
+              itemDiv.className = 'result-item';
+              itemDiv.innerHTML = `
+                <img src="${album.cover_image || album.thumb || 'https://via.placeholder.com/50?text=Sin+Portada'}" alt="Portada">
+                <div class="result-item-info">
+                  <div class="result-item-title">${album.title}</div>
+                  <div class="result-item-sub">📅 ${album.year || 'N/A'} | 🌍 ${album.country || 'N/A'} | 🏷️ ${album.label ? album.label[0] : 'N/A'}</div>
+                </div>
+              `;
+              itemDiv.onclick = async () => {
+                window.closeEditionModal();
+                await selectAlbumEdition(album);
+              };
+              resultsListContainer.appendChild(itemDiv);
+            });
 
-          if (album.resource_url) {
-            try {
-              const detailRes = await fetch(`${album.resource_url}?token=${DISCOGS_TOKEN}`);
-              const detailData = await detailRes.json();
-              
-              if (detailData.genres && detailData.styles) {
-                combinedGenres = [...detailData.genres, ...detailData.styles].join(', ');
-              } else if (detailData.genre && detailData.style) {
-                combinedGenres = [...detailData.genre, ...detailData.style].join(', ');
-              }
-              if (detailData.tracklist) {
-                tracklistData = detailData.tracklist;
-              }
-              if (detailData.notes) {
-                releaseNotes = detailData.notes;
-              }
-            } catch (err) {
-              console.error("No se pudieron cargar los detalles adicionales de Discogs", err);
-            }
+            document.getElementById('select-edition-modal').style.display = 'flex';
           }
-
-          pendingVinyl = {
-            title: album.title,
-            cover: album.cover_image || album.thumb,
-            year: album.year || 'Desconocido',
-            country: album.country || 'Desconocido',
-            label: album.label ? album.label[0] : 'Desconocido',
-            genre: combinedGenres,
-            tracklist: tracklistData,
-            notes: releaseNotes,
-            createdAt: serverTimestamp()
-          };
-
-          document.getElementById('modal-album-title').innerText = pendingVinyl.title;
-          document.getElementById('owner-modal').style.display = 'flex';
         } else {
           alert(`No se encontró ningún vinilo con ese código en Discogs.`);
         }
       } catch (error) {
         alert("Error al conectar con la base de datos de Discogs.");
       }
+    }
+
+    async function selectAlbumEdition(album) {
+      let genresList = album.genre || [];
+      let stylesList = album.style || [];
+      let combinedGenres = [...genresList, ...stylesList].join(', ');
+      if (!combinedGenres) combinedGenres = 'Desconocido';
+
+      let tracklistData = [];
+      let releaseNotes = "Sin notas adicionales";
+
+      if (album.resource_url) {
+        try {
+          const DISCOGS_TOKEN = "CWKqEUOhuHGVWlYnpZzwXXhiGSAqGjBUrbPiYEjM";
+          const detailRes = await fetch(`${album.resource_url}?token=${DISCOGS_TOKEN}`);
+          const detailData = await detailRes.json();
+          
+          if (detailData.genres && detailData.styles) {
+            combinedGenres = [...detailData.genres, ...detailData.styles].join(', ');
+          } else if (detailData.genre && detailData.style) {
+            combinedGenres = [...detailData.genre, ...detailData.style].join(', ');
+          }
+          if (detailData.tracklist) {
+            tracklistData = detailData.tracklist;
+          }
+          if (detailData.notes) {
+            releaseNotes = detailData.notes;
+          }
+        } catch (err) {
+          console.error("No se pudieron cargar los detalles adicionales de Discogs", err);
+        }
+      }
+
+      pendingVinyl = {
+        title: album.title,
+        cover: album.cover_image || album.thumb,
+        year: album.year || 'Desconocido',
+        country: album.country || 'Desconocido',
+        label: album.label ? album.label[0] : 'Desconocido',
+        genre: combinedGenres,
+        tracklist: tracklistData,
+        notes: releaseNotes,
+        createdAt: serverTimestamp()
+      };
+
+      document.getElementById('modal-album-title').innerText = pendingVinyl.title;
+      document.getElementById('owner-modal').style.display = 'flex';
     }
 
     window.saveVinylWithOwner = async function(owner) {
