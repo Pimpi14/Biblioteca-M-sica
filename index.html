@@ -411,7 +411,7 @@
       font-size: 10px;
     }
 
-    /* Detalles y géneros interactivos */
+    /* Detalles y etiquetas interactiva (Géneros y Artista) */
     .detail-cover {
       width: 150px;
       height: 150px;
@@ -419,6 +419,23 @@
       border-radius: 8px;
       display: block;
       margin: 0 auto 12px auto;
+    }
+    .artist-tag {
+      display: inline-block;
+      background-color: #282828;
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 12px;
+      margin: 2px 0;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid var(--accent);
+      transition: all 0.2s;
+    }
+    .artist-tag:hover {
+      background-color: var(--accent);
+      color: #000;
     }
     .genre-tag {
       display: inline-block;
@@ -480,7 +497,6 @@
     <!-- Lupa / Buscador -->
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <!-- Se ha actualizado el placeholder para avisar que también busca por género -->
       <input type="text" id="search-input" class="search-box" placeholder="Buscar por grupo, disco o género..." oninput="window.renderCollection()">
     </div>
 
@@ -587,7 +603,7 @@
     <div class="modal-content">
       <h3 id="det-title" style="margin-bottom: 6px;">Título del disco</h3>
       <img id="det-cover" class="detail-cover" src="" alt="Portada">
-      <div id="det-info" style="font-size: 11px; color: var(--text-sub); line-height: 1.4;"></div>
+      <div id="det-info" style="font-size: 11px; color: var(--text-sub); line-height: 1.5;"></div>
       
       <div style="margin-top: 10px;">
         <button id="btn-open-tidal" class="btn-tidal" onclick="window.openInTidal()">🎵 Abrir y escuchar en Tidal</button>
@@ -756,11 +772,20 @@
       window.renderCollection();
     }
 
-    /* NUEVA FUNCIÓN: Filtrar al hacer clic en un género */
+    /* FILTRAR AL HACER CLIC EN UN GÉNERO */
     window.filterByGenre = function(genre) {
       window.closeDetailModal();
       const searchInput = document.getElementById('search-input');
-      searchInput.value = genre; // Escribe el género en el buscador
+      searchInput.value = genre;
+      window.renderCollection();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* NUEVA FUNCIÓN: FILTRAR AL HACER CLIC EN UN ARTISTA / GRUPO */
+    window.filterByArtist = function(artist) {
+      window.closeDetailModal();
+      const searchInput = document.getElementById('search-input');
+      searchInput.value = artist; // Escribe el nombre del grupo en el buscador
       window.renderCollection(); // Actualiza la lista
       window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube arriba del todo
     }
@@ -790,7 +815,7 @@
       let filteredCollection = window.vinylCollection.filter(item => {
         const matchesOwner = (ownerFilter === 'all') || (item.owner === ownerFilter);
         
-        // MODIFICADO: Ahora el buscador revisa tanto el TÍTULO como el GÉNERO musical
+        // Busca coincidencias en TÍTULO / GRUPO o GÉNERO
         const matchesSearch = !searchQuery || 
                               (item.title || '').toLowerCase().includes(searchQuery) ||
                               (item.genre || '').toLowerCase().includes(searchQuery);
@@ -1072,12 +1097,21 @@
       document.getElementById('det-title').innerText = currentAlbumTitleForTidal;
       document.getElementById('det-cover').src = item.cover || 'https://via.placeholder.com/150?text=Sin+Portada';
       
-      // MODIFICADO: Crear etiquetas (tags) interactivas para cada género
+      // Obtener y formatear el Artista / Grupo
+      let artistName = '';
+      if (item.title && item.title.includes(' - ')) {
+        artistName = item.title.split(' - ')[0].trim();
+      } else {
+        artistName = item.title;
+      }
+      const safeArtist = artistName.replace(/'/g, "\\'");
+      const artistHTML = `<span class="artist-tag" onclick="window.filterByArtist('${safeArtist}')">🎤 ${artistName}</span>`;
+
+      // Crear etiquetas (tags) interactivas para cada género
       let genreHTML = 'N/A';
       if (item.genre && item.genre !== 'N/A' && item.genre !== 'Desconocido') {
         const genresArray = item.genre.split(',').map(g => g.trim()).filter(g => g);
         genreHTML = genresArray.map(g => {
-          // Prevenir problemas si el nombre del género tiene comillas
           const safeG = g.replace(/'/g, "\\'"); 
           return `<span class="genre-tag" onclick="window.filterByGenre('${safeG}')">${g}</span>`;
         }).join('');
@@ -1086,6 +1120,7 @@
       }
 
       document.getElementById('det-info').innerHTML = `
+        <b>Grupo / Artista:</b> ${artistHTML}<br>
         <b>Propietario:</b> ${item.owner || 'N/A'}<br>
         <b>Año:</b> ${item.year || 'N/A'} | <b>País:</b> ${item.country || 'N/A'}<br>
         <b>Sello:</b> ${item.label || 'N/A'}<br>
