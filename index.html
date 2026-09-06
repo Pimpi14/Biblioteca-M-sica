@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Colección de Vinilos</title>
-  <!-- Librería para lectura de códigos de barras con la cámara -->
+  <!-- Librería para lectura de códigos de barras -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     :root {
@@ -13,6 +13,7 @@
       --card-bg: #181818;
       --text: #ffffff;
       --text-sub: #b3b3b3;
+      --accent: #ff9800;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -61,19 +62,19 @@
     
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 15px;
       width: 100%;
-      max-width: 800px;
+      max-width: 900px;
     }
     .card {
       background-color: var(--card-bg);
       border-radius: 8px;
-      padding: 10px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
+      align-items: flex-start;
+      position: relative;
     }
     .card img {
       width: 100%;
@@ -81,22 +82,63 @@
       object-fit: cover;
       border-radius: 6px;
       background-color: #282828;
+      margin-bottom: 10px;
+    }
+    .owner-tag {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      background-color: rgba(0, 0, 0, 0.85);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid var(--accent);
     }
     .card-title {
       font-weight: bold;
-      font-size: 14px;
-      margin: 8px 0 4px 0;
+      font-size: 15px;
+      margin-bottom: 6px;
+      color: var(--text);
     }
-    .card-year {
+    .card-detail {
       font-size: 12px;
       color: var(--text-sub);
+      margin-bottom: 3px;
+    }
+
+    /* Modal emergente para seleccionar propietario */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 300px;
+      width: 80%;
+      text-align: center;
+    }
+    .modal-content h3 { margin-top: 0; }
+    .modal-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
 
   <h1>🎵 Colección de Vinilos</h1>
-  <p class="subtitle">Escanea y guarda tus discos directamente en Discogs</p>
+  <p class="subtitle">Escanea y organiza tus discos con Discogs</p>
 
   <div class="controls">
     <button id="btn-scan" onclick="startScanner()">📷 Escanear Código</button>
@@ -111,9 +153,23 @@
     <!-- Colección guardada -->
   </div>
 
+  <!-- Modal para seleccionar de quién es el disco -->
+  <div id="owner-modal" class="modal">
+    <div class="modal-content">
+      <h3>¿De quién es este vinilo?</h3>
+      <p id="modal-album-title" style="font-size: 13px; color: var(--text-sub);"></p>
+      <div class="modal-buttons">
+        <button onclick="saveVinylWithOwner('Mío')">🙋‍♂️ Mío</button>
+        <button onclick="saveVinylWithOwner('Padre')">👨‍👦 De mi Padre</button>
+        <button onclick="saveVinylWithOwner('Ambos')" class="secondary">🤝 De Ambos</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let html5QrcodeScanner = null;
     let collection = JSON.parse(localStorage.getItem('my_vinyl_collection')) || [];
+    let pendingVinyl = null; // Guarda temporalmente el disco antes de asignarle dueño
 
     document.addEventListener("DOMContentLoaded", renderCollection);
 
@@ -131,8 +187,12 @@
         card.className = 'card';
         card.innerHTML = `
           <img src="${item.cover || 'https://via.placeholder.com/150?text=Sin+Portada'}" alt="Portada">
+          <span class="owner-tag">👤 ${item.owner || 'No asignado'}</span>
           <div class="card-title">${item.title}</div>
-          <div class="card-year">${item.year ? item.year : 'Año desconocido'}</div>
+          <div class="card-detail"><b>Año:</b> ${item.year || 'Desconocido'}</div>
+          <div class="card-detail"><b>País:</b> ${item.country || 'Desconocido'}</div>
+          <div class="card-detail"><b>Sello:</b> ${item.label || 'Desconocido'}</div>
+          <div class="card-detail"><b>Género:</b> ${item.genre || 'Desconocido'}</div>
         `;
         grid.appendChild(card);
       });
@@ -191,23 +251,39 @@
         if (data.results && data.results.length > 0) {
           const album = data.results[0];
           
-          const newVinyl = {
+          // Estructura ampliada con más detalles de Discogs
+          pendingVinyl = {
             title: album.title,
             cover: album.cover_image || album.thumb,
-            year: album.year || 'Desconocido'
+            year: album.year || 'Desconocido',
+            country: album.country || 'Desconocido',
+            label: album.label ? album.label[0] : 'Desconocido',
+            genre: album.genre ? album.genre.join(', ') : 'Desconocido'
           };
 
-          collection.unshift(newVinyl);
-          localStorage.setItem('my_vinyl_collection', JSON.stringify(collection));
-          
-          renderCollection();
-          alert(`¡Añadido desde Discogs!: ${newVinyl.title}`);
+          // Abrir el selector de propietario
+          document.getElementById('modal-album-title').innerText = pendingVinyl.title;
+          document.getElementById('owner-modal').style.display = 'flex';
+
         } else {
           alert(`Código leído (${decodedText}), pero no se encontró ese vinilo en Discogs.`);
         }
       } catch (error) {
         console.error(error);
         alert("Error al conectar con la base de datos de Discogs.");
+      }
+    }
+
+    function saveVinylWithOwner(owner) {
+      if (pendingVinyl) {
+        pendingVinyl.owner = owner;
+        collection.unshift(pendingVinyl);
+        localStorage.setItem('my_vinyl_collection', JSON.stringify(collection));
+        
+        pendingVinyl = null;
+        document.getElementById('owner-modal').style.display = 'none';
+        
+        renderCollection();
       }
     }
   </script>
