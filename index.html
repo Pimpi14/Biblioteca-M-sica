@@ -47,8 +47,41 @@
       pointer-events: none;
     }
 
-    h1 { margin-bottom: 15px; font-size: 24px; text-align: center; }
+    h1 { margin-bottom: 10px; font-size: 24px; text-align: center; }
     
+    /* Panel de Estadísticas / Contadores */
+    .stats-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 15px;
+      background-color: var(--card-bg);
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #282828;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+    .stat-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-sub);
+      margin-top: 2px;
+      text-align: center;
+    }
+
     .controls {
       display: flex;
       flex-direction: column;
@@ -487,6 +520,26 @@
 
   <h1>Vinilos Caso-López 🎸</h1>
 
+  <!-- Contadores / Estadísticas de la colección -->
+  <div class="stats-container">
+    <div class="stat-item">
+      <span class="stat-value" id="count-total">0</span>
+      <span class="stat-label">📊 Total</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="count-manu" style="color: var(--accent);">0</span>
+      <span class="stat-label">🙋‍♂️ Manu</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="count-papa" style="color: #2196f3;">0</span>
+      <span class="stat-label">👨‍👦 Papá</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="count-ambos" style="color: #e91e63;">0</span>
+      <span class="stat-label">🤝 De Ambos</span>
+    </div>
+  </div>
+
   <div class="controls">
     <div class="btn-group">
       <button onclick="window.openAddOptions()">📷 Añadir Vinilo</button>
@@ -505,7 +558,7 @@
         <option value="all">👤 Todos los propietarios</option>
         <option value="Manu">🙋‍♂️ Solo Manu</option>
         <option value="Papá">👨‍👦 Solo Papá</option>
-        <option value="De Ambos">🤝 De Ambos</option>
+        <option value="De Ambos">🤝 De Ambos / Duplicados</option>
       </select>
 
       <select id="sort-select" onchange="window.renderCollection()">
@@ -712,11 +765,56 @@
           return timeB - timeA;
         });
 
+        window.updateCounters();
         window.renderCollection();
       }, (error) => {
         console.error("Error en la conexión con Firestore:", error);
         document.getElementById('album-grid').innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: var(--danger);">Error de permisos o conexión con Firestore. Revisa las reglas de seguridad en Firebase.</p>`;
       });
+    }
+
+    /* OBTENER TÍTULOS DUPLICADOS ENTRE MANU Y PAPÁ */
+    function getDuplicateTitles() {
+      const manuTitles = new Set(
+        window.vinylCollection
+          .filter(item => item.owner === 'Manu')
+          .map(item => (item.title || '').trim().toLowerCase())
+          .filter(t => t.length > 0)
+      );
+      
+      const papaTitles = new Set(
+        window.vinylCollection
+          .filter(item => item.owner === 'Papá')
+          .map(item => (item.title || '').trim().toLowerCase())
+          .filter(t => t.length > 0)
+      );
+
+      const duplicates = new Set();
+      manuTitles.forEach(title => {
+        if (papaTitles.has(title)) {
+          duplicates.add(title);
+        }
+      });
+      return duplicates;
+    }
+
+    /* ACTUALIZAR CONTADORES */
+    window.updateCounters = function() {
+      const duplicateTitles = getDuplicateTitles();
+
+      const total = window.vinylCollection.length;
+      const manu = window.vinylCollection.filter(item => item.owner === 'Manu').length;
+      const papa = window.vinylCollection.filter(item => item.owner === 'Papá').length;
+      
+      // Cuenta tanto los marcados 'De Ambos' como los duplicados
+      const ambos = window.vinylCollection.filter(item => 
+        item.owner === 'De Ambos' || duplicateTitles.has((item.title || '').trim().toLowerCase())
+      ).length;
+
+      document.getElementById('count-total').innerText = total;
+      document.getElementById('count-manu').innerText = manu;
+      document.getElementById('count-papa').innerText = papa;
+      document.getElementById('count-ambos').innerText = ambos;
     }
 
     window.openAddOptions = function() {
@@ -812,8 +910,20 @@
         return;
       }
 
+      const duplicateTitles = getDuplicateTitles();
+
       let filteredCollection = window.vinylCollection.filter(item => {
-        const matchesOwner = (ownerFilter === 'all') || (item.owner === ownerFilter);
+        const normTitle = (item.title || '').trim().toLowerCase();
+
+        let matchesOwner = false;
+        if (ownerFilter === 'all') {
+          matchesOwner = true;
+        } else if (ownerFilter === 'De Ambos') {
+          // Incluye los marcados "De Ambos" O los que estén duplicados entre Manu y Papá
+          matchesOwner = (item.owner === 'De Ambos') || duplicateTitles.has(normTitle);
+        } else {
+          matchesOwner = (item.owner === ownerFilter);
+        }
         
         // Busca coincidencias en TÍTULO / GRUPO o GÉNERO
         const matchesSearch = !searchQuery || 
@@ -848,6 +958,11 @@
 
       sortedCollection.forEach((item) => {
         const element = document.createElement('div');
+        const normTitle = (item.title || '').trim().toLowerCase();
+        const isDuplicated = duplicateTitles.has(normTitle) && item.owner !== 'De Ambos';
+        
+        // Etiqueta visual del propietario o indicación de duplicado
+        const displayOwnerTag = isDuplicated ? `🤝 ${item.owner} (Duplicado)` : `👤 ${item.owner || 'N/A'}`;
         
         if (isListView) {
           element.className = 'list-row';
@@ -871,7 +986,7 @@
               <div class="list-row-sub">📅 ${item.year || 'N/A'} | 🌍 ${item.country || 'N/A'} | 🏷️ ${item.label || 'N/A'}</div>
               <div class="list-row-sub">🎸 ${item.genre || 'N/A'}</div>
             </div>
-            <span class="list-row-owner">👤 ${item.owner || 'N/A'}</span>
+            <span class="list-row-owner">${displayOwnerTag}</span>
             <div class="list-row-actions">
               <button class="btn-edit" onclick="window.openEditModal('${item.id}')">✏️</button>
               <button class="btn-delete" onclick="window.deleteVinyl('${item.id}')">🗑️</button>
@@ -894,7 +1009,7 @@
 
           element.innerHTML = `
             <img src="${item.cover || 'https://via.placeholder.com/150?text=Sin+Portada'}" alt="Portada">
-            <span class="owner-tag">👤 ${item.owner || 'N/A'}</span>
+            <span class="owner-tag">${displayOwnerTag}</span>
             <div class="card-title">${item.title}</div>
             <div class="card-detail"><b>Año:</b> ${item.year || 'N/A'}</div>
             <div class="card-detail"><b>País:</b> ${item.country || 'N/A'}</div>
@@ -1105,11 +1220,8 @@
         artistStr = item.title || '';
       }
 
-      // Delimitadores habituales: coma, &, /, feat., ft., with, and, vs.
       const artistDelimiters = /,\s*|\s+(?:&|\/|and|with|feat\.?|ft\.?|vs\.?)\s+/i;
       let artistList = artistStr.split(artistDelimiters).map(a => a.trim()).filter(a => a.length > 0);
-      
-      // Eliminar duplicados si los hubiera
       artistList = [...new Set(artistList)];
 
       let artistHTML = artistList.map(artist => {
@@ -1117,7 +1229,6 @@
         return `<span class="artist-tag" onclick="window.filterByArtist('${safeArtist}')">🎤 ${artist}</span>`;
       }).join(' ');
 
-      // Crear etiquetas (tags) interactivas para cada género
       let genreHTML = 'N/A';
       if (item.genre && item.genre !== 'N/A' && item.genre !== 'Desconocido') {
         const genresArray = item.genre.split(',').map(g => g.trim()).filter(g => g);
