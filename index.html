@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nuestros Vinilos</title>
+  <title>Vinilos Caso-López</title>
   <!-- Librería para lectura de códigos de barras -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
@@ -25,9 +25,31 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+      position: relative;
     }
-    h1 { margin-bottom: 5px; font-size: 22px; }
-    p.subtitle { color: var(--text-sub); margin-top: 0; margin-bottom: 15px; font-size: 13px; }
+
+    /* Fondo con la lengua de los Rolling Stones */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* Logo oficial en SVG de la lengua de los Rolling Stones */
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%23e50914" d="M256 32C132.3 32 32 132.3 32 256s100.3 224 224 224 224-100.3 224-224S379.7 32 256 32zm82.7 301.3c-14.9 0-31.5-6.2-45.9-17.7-17-13.6-26.6-32.9-27.1-55.8-.5-23.7 8.3-44.5 24.7-58.4 15.6-13.2 36.3-19.5 58.1-17.5 12.1 1.1 23.4 4.8 33.6 10.8-2.6-43.2-30.8-79.6-73.4-96-38-14.7-81-8.3-112.5 17.5-28.7 23.8-42.5 60.5-37.5 97.4 3.7 27.6 18.7 52.8 42.1 71.1 24.1 19 55.4 29.5 88.1 29.5 2.1 0 4.3-.1 6.4-.3 15.8-1.5 30.6-6.1 43.4-13.4z"/><path fill="%23ffffff" d="M309.3 277.3c-7.2-4.1-13-10.4-16.7-18.1-3.7-7.8-4.7-16.4-2.8-24.8 1.9-8.4 7-15.6 14.1-20.2 7.1-4.6 15.7-6.2 24.1-4.4 3.5.7 6.9 1.9 10 3.5 1.5.8 2.3 2.5 1.8 4.1l-14.9 49.6c-.8 2.6-3.8 3.8-6.2 2.6-2.5-1.2-4.3-3.7-4.4-6.3z"/><path fill="%23ffeb3b" d="M213.3 330.7c-21.3-4.1-41.1-14.5-56.5-29.4-16.4-15.8-27.3-36.6-31.2-59.3-4-23.3 1.2-47.3 14.4-66.5 13.9-20.3 35.5-33.8 59.8-38.3 12.4-2.3 25-.8 36.6 4.3-19.5 10.3-33.2 28.2-37.9 49.3-5.2 23.1 1.9 47.9 19.3 64.9 14.2 13.9 32.5 22.4 52.6 24.3-7.5 12.3-19.1 21.6-33.1 26.6-8.2 2.9-16.9 4.2-25.2 3.8z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 55vw 55vw;
+      opacity: 0.05;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    h1 { margin-bottom: 5px; font-size: 24px; text-align: center; }
+    p.subtitle { color: var(--text-sub); margin-top: 0; margin-bottom: 15px; font-size: 13px; text-align: center; }
     
     .controls {
       display: flex;
@@ -36,6 +58,7 @@
       margin-bottom: 15px;
       width: 100%;
       max-width: 500px;
+      z-index: 1;
     }
     .btn-group {
       display: flex;
@@ -77,6 +100,7 @@
       padding: 8px;
       border-radius: 8px;
       box-sizing: border-box;
+      z-index: 1;
     }
     .alphabet-nav button {
       flex: none;
@@ -100,6 +124,7 @@
       border-radius: 12px;
       overflow: hidden;
       margin-bottom: 20px;
+      z-index: 1;
     }
     
     /* Cuadrícula compacta */
@@ -109,6 +134,7 @@
       gap: 10px;
       width: 100%;
       max-width: 900px;
+      z-index: 1;
     }
     .card {
       background-color: var(--card-bg);
@@ -211,7 +237,7 @@
 </head>
 <body>
 
-  <h1>🎵 Nuestros Vinilos</h1>
+  <h1>👅 Vinilos Caso-López</h1>
   <p class="subtitle">Colección sincronizada en la nube</p>
 
   <div class="controls">
