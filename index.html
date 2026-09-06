@@ -100,7 +100,7 @@
       border: 1px solid #333;
       padding: 10px 15px 10px 38px;
       border-radius: 20px;
-      font-size: 16px; /* Evita auto-zoom en Safari iOS */
+      font-size: 16px; 
       width: 100%;
       box-sizing: border-box;
       outline: none;
@@ -411,6 +411,7 @@
       font-size: 10px;
     }
 
+    /* Detalles y géneros interactivos */
     .detail-cover {
       width: 150px;
       height: 150px;
@@ -418,6 +419,23 @@
       border-radius: 8px;
       display: block;
       margin: 0 auto 12px auto;
+    }
+    .genre-tag {
+      display: inline-block;
+      background-color: #282828;
+      color: var(--primary);
+      padding: 4px 8px;
+      border-radius: 12px;
+      margin: 2px 2px 2px 0;
+      cursor: pointer;
+      font-size: 10px;
+      border: 1px solid #444;
+      transition: all 0.2s;
+    }
+    .genre-tag:hover {
+      background-color: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
     }
     .detail-section-title {
       font-size: 13px;
@@ -459,10 +477,11 @@
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
     
-    <!-- Lupa / Buscador adaptado a iOS iPhone -->
+    <!-- Lupa / Buscador -->
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <input type="text" id="search-input" class="search-box" placeholder="Buscar por grupo o disco..." oninput="window.renderCollection()">
+      <!-- Se ha actualizado el placeholder para avisar que también busca por género -->
+      <input type="text" id="search-input" class="search-box" placeholder="Buscar por grupo, disco o género..." oninput="window.renderCollection()">
     </div>
 
     <div class="filter-row">
@@ -702,7 +721,6 @@
       document.getElementById('catalog-modal').style.display = 'none';
     }
 
-    /* Búsqueda por Texto (Nueva Función) */
     window.openSearchTextModal = function() {
       window.closeAddOptionsModal();
       document.getElementById('manual-search-text').value = '';
@@ -738,6 +756,15 @@
       window.renderCollection();
     }
 
+    /* NUEVA FUNCIÓN: Filtrar al hacer clic en un género */
+    window.filterByGenre = function(genre) {
+      window.closeDetailModal();
+      const searchInput = document.getElementById('search-input');
+      searchInput.value = genre; // Escribe el género en el buscador
+      window.renderCollection(); // Actualiza la lista
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube arriba del todo
+    }
+
     window.renderCollection = function() {
       const grid = document.getElementById('album-grid');
       const sortType = document.getElementById('sort-select').value;
@@ -762,7 +789,12 @@
 
       let filteredCollection = window.vinylCollection.filter(item => {
         const matchesOwner = (ownerFilter === 'all') || (item.owner === ownerFilter);
-        const matchesSearch = !searchQuery || (item.title || '').toLowerCase().includes(searchQuery);
+        
+        // MODIFICADO: Ahora el buscador revisa tanto el TÍTULO como el GÉNERO musical
+        const matchesSearch = !searchQuery || 
+                              (item.title || '').toLowerCase().includes(searchQuery) ||
+                              (item.genre || '').toLowerCase().includes(searchQuery);
+                              
         return matchesOwner && matchesSearch;
       });
 
@@ -1040,11 +1072,24 @@
       document.getElementById('det-title').innerText = currentAlbumTitleForTidal;
       document.getElementById('det-cover').src = item.cover || 'https://via.placeholder.com/150?text=Sin+Portada';
       
+      // MODIFICADO: Crear etiquetas (tags) interactivas para cada género
+      let genreHTML = 'N/A';
+      if (item.genre && item.genre !== 'N/A' && item.genre !== 'Desconocido') {
+        const genresArray = item.genre.split(',').map(g => g.trim()).filter(g => g);
+        genreHTML = genresArray.map(g => {
+          // Prevenir problemas si el nombre del género tiene comillas
+          const safeG = g.replace(/'/g, "\\'"); 
+          return `<span class="genre-tag" onclick="window.filterByGenre('${safeG}')">${g}</span>`;
+        }).join('');
+      } else {
+        genreHTML = item.genre || 'N/A';
+      }
+
       document.getElementById('det-info').innerHTML = `
         <b>Propietario:</b> ${item.owner || 'N/A'}<br>
         <b>Año:</b> ${item.year || 'N/A'} | <b>País:</b> ${item.country || 'N/A'}<br>
         <b>Sello:</b> ${item.label || 'N/A'}<br>
-        <b>Género / Estilos:</b> ${item.genre || 'N/A'}
+        <div style="margin-top: 8px;"><b>Géneros / Estilos:</b><br> ${genreHTML}</div>
       `;
 
       const trackContainer = document.getElementById('det-tracklist');
