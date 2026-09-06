@@ -243,9 +243,9 @@
       <h3>¿De quién es este vinilo?</h3>
       <p id="modal-album-title" style="font-size: 13px; color: var(--text-sub);"></p>
       <div class="modal-buttons">
-        <button onclick="window.saveVinylWithOwner('Mío')">🙋‍♂️ Mío</button>
-        <button onclick="window.saveVinylWithOwner('Padre')">👨‍👦 De mi Padre</button>
-        <button onclick="window.saveVinylWithOwner('Ambos')" class="secondary">🤝 De Ambos</button>
+        <button onclick="window.saveVinylWithOwner('Manu')">🙋‍♂️ Manu</button>
+        <button onclick="window.saveVinylWithOwner('Papá')">👨‍👦 Papá</button>
+        <button onclick="window.saveVinylWithOwner('De Ambos')" class="secondary">🤝 De Ambos</button>
       </div>
     </div>
   </div>
@@ -261,9 +261,9 @@
       <div class="input-group">
         <label>Propietario:</label>
         <select id="edit-owner">
-          <option value="Mío">Mío</option>
-          <option value="Padre">De mi Padre</option>
-          <option value="Ambos">De Ambos</option>
+          <option value="Manu">Manu</option>
+          <option value="Papá">Papá</option>
+          <option value="De Ambos">De Ambos</option>
         </select>
       </div>
       <div class="input-group">
@@ -322,11 +322,9 @@
     onSnapshot(vinilosRef, (snapshot) => {
       window.vinylCollection = [];
       snapshot.forEach((docSnap) => {
-        // Guardamos los datos y el ID único del documento
         window.vinylCollection.push({ id: docSnap.id, ...docSnap.data() });
       });
       
-      // Ordenar por defecto por fecha de creación (los más recientes primero) si existe
       window.vinylCollection.sort((a, b) => {
         const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
         const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
@@ -478,7 +476,7 @@
             country: album.country || 'Desconocido',
             label: album.label ? album.label[0] : 'Desconocido',
             genre: album.genre ? album.genre.join(', ') : 'Desconocido',
-            createdAt: serverTimestamp() // Tiempo exacto de Firebase
+            createdAt: serverTimestamp()
           };
 
           document.getElementById('modal-album-title').innerText = pendingVinyl.title;
@@ -499,7 +497,6 @@
         document.getElementById('owner-modal').style.display = 'none';
         
         try {
-          // Guardar en la Nube
           await addDoc(vinilosRef, pendingVinyl);
           pendingVinyl = null;
         } catch (e) {
@@ -512,7 +509,6 @@
       const vinylToDel = window.vinylCollection.find(v => v.id === id);
       if (vinylToDel && confirm(`¿Seguro que quieres eliminar "${vinylToDel.title}"?`)) {
         try {
-          // Borrar de la nube
           await deleteDoc(doc(db, "vinilos", id));
         } catch (e) {
           alert("Error al eliminar: " + e.message);
@@ -526,7 +522,7 @@
       if(!item) return;
 
       document.getElementById('edit-title').value = item.title || '';
-      document.getElementById('edit-owner').value = item.owner || 'Mío';
+      document.getElementById('edit-owner').value = item.owner || 'Manu';
       document.getElementById('edit-genre').value = item.genre || '';
       document.getElementById('edit-year').value = item.year || '';
       document.getElementById('edit-country').value = item.country || '';
@@ -552,7 +548,6 @@
         };
 
         try {
-          // Actualizar en la Nube
           await updateDoc(doc(db, "vinilos", editingId), updatedData);
           window.closeEditModal();
         } catch (e) {
