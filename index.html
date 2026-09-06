@@ -110,16 +110,16 @@
     button.secondary { background-color: #333; }
     button.btn-tidal { background-color: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 6px; }
     
-    /* Contenedor del Buscador compatible con iPhone / iOS */
+    /* Contenedor del Buscador con botón de borrar */
     .search-wrapper {
       position: relative;
       width: 100%;
+      display: flex;
+      align-items: center;
     }
     .search-wrapper .search-icon {
       position: absolute;
       left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
       font-size: 16px;
       pointer-events: none;
       z-index: 2;
@@ -131,7 +131,7 @@
       background-color: var(--card-bg);
       color: var(--text);
       border: 1px solid #333;
-      padding: 10px 15px 10px 38px;
+      padding: 10px 38px 10px 38px;
       border-radius: 20px;
       font-size: 16px; 
       width: 100%;
@@ -140,6 +140,24 @@
     }
     .search-box:focus {
       border-color: var(--primary);
+    }
+    /* Botón X de borrado rápido */
+    .clear-search-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 16px;
+      cursor: pointer;
+      display: none;
+      padding: 0;
+      width: auto;
+      height: auto;
+      z-index: 2;
+    }
+    .clear-search-btn:active {
+      color: var(--text);
     }
 
     .filter-row {
@@ -547,10 +565,11 @@
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
     
-    <!-- Lupa / Buscador -->
+    <!-- Lupa / Buscador con botón X para borrar -->
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <input type="text" id="search-input" class="search-box" placeholder="Buscar por grupo, disco o género..." oninput="window.renderCollection()">
+      <input type="text" id="search-input" class="search-box" placeholder="Buscar por grupo, disco o género..." oninput="window.handleSearchInput()">
+      <button id="clear-search" class="clear-search-btn" onclick="window.clearSearch()">✖</button>
     </div>
 
     <div class="filter-row">
@@ -773,6 +792,27 @@
       });
     }
 
+    /* GESTIÓN DE LA LUPA DE BÚSQUEDA Y BOTÓN X */
+    window.handleSearchInput = function() {
+      const input = document.getElementById('search-input');
+      const clearBtn = document.getElementById('clear-search');
+      
+      if (input.value.length > 0) {
+        clearBtn.style.display = 'block';
+      } else {
+        clearBtn.style.display = 'none';
+      }
+      window.renderCollection();
+    }
+
+    window.clearSearch = function() {
+      const input = document.getElementById('search-input');
+      input.value = '';
+      document.getElementById('clear-search').style.display = 'none';
+      input.focus();
+      window.renderCollection();
+    }
+
     /* OBTENER TÍTULOS DUPLICADOS ENTRE MANU Y PAPÁ */
     function getDuplicateTitles() {
       const manuTitles = new Set(
@@ -806,7 +846,6 @@
       const manu = window.vinylCollection.filter(item => item.owner === 'Manu').length;
       const papa = window.vinylCollection.filter(item => item.owner === 'Papá').length;
       
-      // Cuenta tanto los marcados 'De Ambos' como los duplicados
       const ambos = window.vinylCollection.filter(item => 
         item.owner === 'De Ambos' || duplicateTitles.has((item.title || '').trim().toLowerCase())
       ).length;
@@ -875,7 +914,7 @@
       window.closeDetailModal();
       const searchInput = document.getElementById('search-input');
       searchInput.value = genre;
-      window.renderCollection();
+      window.handleSearchInput();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -884,7 +923,7 @@
       window.closeDetailModal();
       const searchInput = document.getElementById('search-input');
       searchInput.value = artist; 
-      window.renderCollection(); 
+      window.handleSearchInput();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -919,13 +958,11 @@
         if (ownerFilter === 'all') {
           matchesOwner = true;
         } else if (ownerFilter === 'De Ambos') {
-          // Incluye los marcados "De Ambos" O los que estén duplicados entre Manu y Papá
           matchesOwner = (item.owner === 'De Ambos') || duplicateTitles.has(normTitle);
         } else {
           matchesOwner = (item.owner === ownerFilter);
         }
         
-        // Busca coincidencias en TÍTULO / GRUPO o GÉNERO
         const matchesSearch = !searchQuery || 
                               (item.title || '').toLowerCase().includes(searchQuery) ||
                               (item.genre || '').toLowerCase().includes(searchQuery);
@@ -961,7 +998,6 @@
         const normTitle = (item.title || '').trim().toLowerCase();
         const isDuplicated = duplicateTitles.has(normTitle) && item.owner !== 'De Ambos';
         
-        // Etiqueta visual del propietario o indicación de duplicado
         const displayOwnerTag = isDuplicated ? `🤝 ${item.owner} (Duplicado)` : `👤 ${item.owner || 'N/A'}`;
         
         if (isListView) {
@@ -1212,7 +1248,6 @@
       document.getElementById('det-title').innerText = currentAlbumTitleForTidal;
       document.getElementById('det-cover').src = item.cover || 'https://via.placeholder.com/150?text=Sin+Portada';
       
-      // EXTRAER Y SEPARAR MÚLTIPLES ARTISTAS //
       let artistStr = '';
       if (item.title && item.title.includes(' - ')) {
         artistStr = item.title.split(' - ')[0].trim();
