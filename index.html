@@ -411,7 +411,7 @@
       font-size: 10px;
     }
 
-    /* Detalles y etiquetas interactiva (Géneros y Artista) */
+    /* Detalles y etiquetas interactivas (Géneros y Artistas) */
     .detail-cover {
       width: 150px;
       height: 150px;
@@ -426,7 +426,7 @@
       color: var(--accent);
       padding: 4px 10px;
       border-radius: 12px;
-      margin: 2px 0;
+      margin: 2px 2px 2px 0;
       cursor: pointer;
       font-size: 11px;
       font-weight: bold;
@@ -781,13 +781,13 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /* NUEVA FUNCIÓN: FILTRAR AL HACER CLIC EN UN ARTISTA / GRUPO */
+    /* FILTRAR AL HACER CLIC EN UN ARTISTA / GRUPO */
     window.filterByArtist = function(artist) {
       window.closeDetailModal();
       const searchInput = document.getElementById('search-input');
-      searchInput.value = artist; // Escribe el nombre del grupo en el buscador
-      window.renderCollection(); // Actualiza la lista
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube arriba del todo
+      searchInput.value = artist; 
+      window.renderCollection(); 
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     window.renderCollection = function() {
@@ -1097,15 +1097,25 @@
       document.getElementById('det-title').innerText = currentAlbumTitleForTidal;
       document.getElementById('det-cover').src = item.cover || 'https://via.placeholder.com/150?text=Sin+Portada';
       
-      // Obtener y formatear el Artista / Grupo
-      let artistName = '';
+      // EXTRAER Y SEPARAR MÚLTIPLES ARTISTAS //
+      let artistStr = '';
       if (item.title && item.title.includes(' - ')) {
-        artistName = item.title.split(' - ')[0].trim();
+        artistStr = item.title.split(' - ')[0].trim();
       } else {
-        artistName = item.title;
+        artistStr = item.title || '';
       }
-      const safeArtist = artistName.replace(/'/g, "\\'");
-      const artistHTML = `<span class="artist-tag" onclick="window.filterByArtist('${safeArtist}')">🎤 ${artistName}</span>`;
+
+      // Delimitadores habituales: coma, &, /, feat., ft., with, and, vs.
+      const artistDelimiters = /,\s*|\s+(?:&|\/|and|with|feat\.?|ft\.?|vs\.?)\s+/i;
+      let artistList = artistStr.split(artistDelimiters).map(a => a.trim()).filter(a => a.length > 0);
+      
+      // Eliminar duplicados si los hubiera
+      artistList = [...new Set(artistList)];
+
+      let artistHTML = artistList.map(artist => {
+        const safeArtist = artist.replace(/'/g, "\\'");
+        return `<span class="artist-tag" onclick="window.filterByArtist('${safeArtist}')">🎤 ${artist}</span>`;
+      }).join(' ');
 
       // Crear etiquetas (tags) interactivas para cada género
       let genreHTML = 'N/A';
@@ -1120,7 +1130,7 @@
       }
 
       document.getElementById('det-info').innerHTML = `
-        <b>Grupo / Artista:</b> ${artistHTML}<br>
+        <div style="margin-bottom: 6px;"><b>Grupo(s) / Artista(s):</b><br> ${artistHTML || 'N/A'}</div>
         <b>Propietario:</b> ${item.owner || 'N/A'}<br>
         <b>Año:</b> ${item.year || 'N/A'} | <b>País:</b> ${item.country || 'N/A'}<br>
         <b>Sello:</b> ${item.label || 'N/A'}<br>
