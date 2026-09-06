@@ -286,7 +286,7 @@
 </head>
 <body>
 
-  <h1>Vinilos Caso-López</h1>
+  <h1>Vinilos Caso-López 🎸</h1>
 
   <div class="controls">
     <div class="btn-group">
@@ -508,7 +508,6 @@
         const card = document.createElement('div');
         card.className = 'card';
         
-        // Manejador optimizado para móviles (iPhone / Android) y escritorio
         card.onclick = (e) => {
           if (e.target.tagName === 'BUTTON' || e.target.closest('.card-actions')) return;
           window.openDetailModal(item.id);
