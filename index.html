@@ -15,7 +15,6 @@
       --text-sub: #b3b3b3;
       --accent: #ff9800;
       --danger: #e91e63;
-      --tidal: #000000;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -647,7 +646,7 @@
               if (detailData.genres && detailData.styles) {
                 combinedGenres = [...detailData.genres, ...detailData.styles].join(', ');
               } else if (detailData.genre && detailData.style) {
-                combinedGenres = [...detailData.genre, ...detailData.style].join(',؍].join(', ');
+                combinedGenres = [...detailData.genre, ...detailData.style].join(', ');
               }
               if (detailData.tracklist) {
                 tracklistData = detailData.tracklist;
@@ -735,11 +734,7 @@
     window.openInTidal = function() {
       if (!currentAlbumTitleForTidal) return;
       const query = encodeURIComponent(currentAlbumTitleForTidal);
-      
-      // Enlace universal de Tidal para buscar el álbum
       const tidalUrl = `https://listen.tidal.com/search?q=${query}`;
-      
-      // Intenta abrir la app de Tidal o redirige a la web si no está instalada
       window.location.href = tidalUrl;
     }
 
@@ -773,7 +768,7 @@
       document.getElementById('edit-modal').style.display = 'flex';
     }
 
-    window.closeEditModal = function(id) {
+    window.closeEditModal = function() {
       document.getElementById('edit-modal').style.display = 'none';
       editingId = null;
     }
