@@ -38,18 +38,16 @@
       left: 0;
       width: 100%;
       height: 100%;
-      /* Logo oficial en SVG de la lengua de los Rolling Stones */
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%23e50914" d="M256 32C132.3 32 32 132.3 32 256s100.3 224 224 224 224-100.3 224-224S379.7 32 256 32zm82.7 301.3c-14.9 0-31.5-6.2-45.9-17.7-17-13.6-26.6-32.9-27.1-55.8-.5-23.7 8.3-44.5 24.7-58.4 15.6-13.2 36.3-19.5 58.1-17.5 12.1 1.1 23.4 4.8 33.6 10.8-2.6-43.2-30.8-79.6-73.4-96-38-14.7-81-8.3-112.5 17.5-28.7 23.8-42.5 60.5-37.5 97.4 3.7 27.6 18.7 52.8 42.1 71.1 24.1 19 55.4 29.5 88.1 29.5 2.1 0 4.3-.1 6.4-.3 15.8-1.5 30.6-6.1 43.4-13.4z"/><path fill="%23ffffff" d="M309.3 277.3c-7.2-4.1-13-10.4-16.7-18.1-3.7-7.8-4.7-16.4-2.8-24.8 1.9-8.4 7-15.6 14.1-20.2 7.1-4.6 15.7-6.2 24.1-4.4 3.5.7 6.9 1.9 10 3.5 1.5.8 2.3 2.5 1.8 4.1l-14.9 49.6c-.8 2.6-3.8 3.8-6.2 2.6-2.5-1.2-4.3-3.7-4.4-6.3z"/><path fill="%23ffeb3b" d="M213.3 330.7c-21.3-4.1-41.1-14.5-56.5-29.4-16.4-15.8-27.3-36.6-31.2-59.3-4-23.3 1.2-47.3 14.4-66.5 13.9-20.3 35.5-33.8 59.8-38.3 12.4-2.3 25-.8 36.6 4.3-19.5 10.3-33.2 28.2-37.9 49.3-5.2 23.1 1.9 47.9 19.3 64.9 14.2 13.9 32.5 22.4 52.6 24.3-7.5 12.3-19.1 21.6-33.1 26.6-8.2 2.9-16.9 4.2-25.2 3.8z"/></svg>');
+      background-image: url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=');
       background-repeat: no-repeat;
       background-position: center;
-      background-size: 55vw 55vw;
-      opacity: 0.05;
+      background-size: contain;
+      opacity: 0.15;
       z-index: -1;
       pointer-events: none;
     }
 
-    h1 { margin-bottom: 5px; font-size: 24px; text-align: center; }
-    p.subtitle { color: var(--text-sub); margin-top: 0; margin-bottom: 15px; font-size: 13px; text-align: center; }
+    h1 { margin-bottom: 15px; font-size: 24px; text-align: center; }
     
     .controls {
       display: flex;
@@ -74,6 +72,7 @@
       font-weight: bold;
       cursor: pointer;
       font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
     }
     button.secondary { background-color: #333; }
     
@@ -145,6 +144,12 @@
       align-items: flex-start;
       position: relative;
       font-size: 12px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s ease;
+    }
+    .card:active {
+      transform: scale(0.98);
     }
     .card img {
       width: 100%;
@@ -153,6 +158,7 @@
       border-radius: 6px;
       background-color: #282828;
       margin-bottom: 6px;
+      pointer-events: none;
     }
     .owner-tag {
       position: absolute;
@@ -165,6 +171,8 @@
       font-size: 9px;
       font-weight: bold;
       border: 1px solid var(--accent);
+      z-index: 2;
+      pointer-events: none;
     }
     .card-title {
       font-weight: bold;
@@ -176,6 +184,7 @@
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      pointer-events: none;
     }
     .card-detail {
       font-size: 10px;
@@ -185,12 +194,14 @@
       overflow: hidden;
       text-overflow: ellipsis;
       width: 100%;
+      pointer-events: none;
     }
     .card-actions {
       display: flex;
       gap: 4px;
       width: 100%;
       margin-top: 6px;
+      z-index: 3;
     }
     .card-actions button {
       padding: 4px 6px;
@@ -214,11 +225,12 @@
       background: var(--card-bg);
       padding: 20px;
       border-radius: 12px;
-      max-width: 320px;
-      width: 85%;
+      max-width: 400px;
+      width: 90%;
       text-align: left;
       max-height: 90vh;
       overflow-y: auto;
+      box-sizing: border-box;
     }
     .modal-content h3 { margin-top: 0; text-align: center; }
     .modal-buttons {
@@ -233,12 +245,48 @@
       width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #333;
       background-color: #222; color: #fff; box-sizing: border-box;
     }
+
+    /* Estilos para el Modal de Detalle (Tracklist y Notas) */
+    .detail-cover {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto 12px auto;
+    }
+    .detail-section-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--primary);
+      margin-top: 12px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 2px;
+    }
+    .tracklist-container {
+      font-size: 11px;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #121212;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #282828;
+    }
+    .track-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      border-bottom: 1px solid #1a1a1a;
+      padding-bottom: 2px;
+    }
+    .track-title { color: var(--text); }
+    .track-dur { color: var(--text-sub); margin-left: 10px; }
   </style>
 </head>
 <body>
 
-  <h1>👅 Vinilos Caso-López</h1>
-  <p class="subtitle">Colección sincronizada en la nube</p>
+  <h1>Vinilos Caso-López</h1>
 
   <div class="controls">
     <div class="btn-group">
@@ -248,7 +296,7 @@
     <select id="sort-select" onchange="window.renderCollection()">
       <option value="newest">📅 Ordenar por: Más recientes</option>
       <option value="title">🅰️ Ordenar por: Nombre (Artista/Título)</option>
-      <option value="genre">🎸 Ordenar por: Género</option>
+      <option value="genre">🎸 Ordenar por: Género / Estilo</option>
       <option value="owner">👤 Ordenar por: Propietario</option>
     </select>
   </div>
@@ -305,6 +353,29 @@
     </div>
   </div>
 
+  <!-- Modal para Detalle Completo (Tracklist y Notas) -->
+  <div id="detail-modal" class="modal" onclick="if(event.target === this) window.closeDetailModal()">
+    <div class="modal-content">
+      <h3 id="det-title" style="margin-bottom: 6px;">Título del disco</h3>
+      <img id="det-cover" class="detail-cover" src="" alt="Portada">
+      <div id="det-info" style="font-size: 11px; color: var(--text-sub); line-height: 1.4;"></div>
+      
+      <div class="detail-section-title">🎵 Listado de Canciones (Tracklist)</div>
+      <div id="det-tracklist" class="tracklist-container">
+        <p style="color: var(--text-sub); text-align:center; margin: 10px 0;">Sin pistas registradas</p>
+      </div>
+
+      <div class="detail-section-title">📝 Notas de la Edición</div>
+      <div id="det-notes" style="font-size: 10px; color: var(--text-sub); max-height: 80px; overflow-y: auto; background: #121212; padding: 6px; border-radius: 6px; border: 1px solid #282828;">
+        Sin notas adicionales
+      </div>
+
+      <div class="modal-buttons" style="margin-top: 12px;">
+        <button onclick="window.closeDetailModal()" class="secondary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal para Editar Datos -->
   <div id="edit-modal" class="modal">
     <div class="modal-content">
@@ -322,7 +393,7 @@
         </select>
       </div>
       <div class="input-group">
-        <label>Género:</label>
+        <label>Género / Estilo:</label>
         <input type="text" id="edit-genre">
       </div>
       <div class="input-group">
@@ -346,12 +417,10 @@
 
   <!-- Script Principal usando Firebase Modular -->
   <script type="module">
-    // 1. Importar Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, serverTimestamp } 
     from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // 2. Tu configuración exacta
     const firebaseConfig = {
       apiKey: "AIzaSyAPPhFMzBM2ZjvdeY4Jg0bmTdiIrvHG40w",
       authDomain: "vinilos-caso-lopez.firebaseapp.com",
@@ -362,18 +431,15 @@
       measurementId: "G-KBVT33FQKE"
     };
 
-    // 3. Inicializar App y Base de datos
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const vinilosRef = collection(db, "vinilos");
 
-    // Variables globales
     window.vinylCollection = [];
     let pendingVinyl = null; 
     let editingId = null;
     let html5QrcodeScanner = null;
 
-    // 4. Sincronización en Tiempo Real con Firebase
     onSnapshot(vinilosRef, (snapshot) => {
       window.vinylCollection = [];
       snapshot.forEach((docSnap) => {
@@ -388,8 +454,6 @@
 
       window.renderCollection();
     });
-
-    // --- FUNCIONES DE LA INTERFAZ ---
 
     window.openAddOptions = function() {
       document.getElementById('add-options-modal').style.display = 'flex';
@@ -443,6 +507,12 @@
       sortedCollection.forEach((item) => {
         const card = document.createElement('div');
         card.className = 'card';
+        
+        // Manejador optimizado para móviles (iPhone / Android) y escritorio
+        card.onclick = (e) => {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('.card-actions')) return;
+          window.openDetailModal(item.id);
+        };
 
         if (sortType === 'title') {
           const firstLetter = getCleanFirstLetter(item.title);
@@ -459,7 +529,7 @@
           <div class="card-detail"><b>Año:</b> ${item.year || 'N/A'}</div>
           <div class="card-detail"><b>País:</b> ${item.country || 'N/A'}</div>
           <div class="card-detail"><b>Sello:</b> ${item.label || 'N/A'}</div>
-          <div class="card-detail"><b>Género:</b> ${item.genre || 'N/A'}</div>
+          <div class="card-detail" title="${item.genre || 'N/A'}"><b>Género/Estilo:</b> ${item.genre || 'N/A'}</div>
           <div class="card-actions">
             <button class="btn-edit" onclick="window.openEditModal('${item.id}')">✏️</button>
             <button class="btn-delete" onclick="window.deleteVinyl('${item.id}')">🗑️</button>
@@ -499,8 +569,6 @@
         alphabetNav.appendChild(btn);
       });
     }
-
-    // --- ESCÁNER Y DISCOGS ---
 
     window.startScanner = function() {
       window.closeAddOptionsModal();
@@ -555,13 +623,45 @@
 
         if (data.results && data.results.length > 0) {
           const album = data.results[0];
+          
+          let genresList = album.genre || [];
+          let stylesList = album.style || [];
+          let combinedGenres = [...genresList, ...stylesList].join(', ');
+          if (!combinedGenres) combinedGenres = 'Desconocido';
+
+          let tracklistData = [];
+          let releaseNotes = "Sin notas adicionales";
+
+          if (album.resource_url) {
+            try {
+              const detailRes = await fetch(`${album.resource_url}?token=${DISCOGS_TOKEN}`);
+              const detailData = await detailRes.json();
+              
+              if (detailData.genres && detailData.styles) {
+                combinedGenres = [...detailData.genres, ...detailData.styles].join(', ');
+              } else if (detailData.genre && detailData.style) {
+                combinedGenres = [...detailData.genre, ...detailData.style].join(', ');
+              }
+              if (detailData.tracklist) {
+                tracklistData = detailData.tracklist;
+              }
+              if (detailData.notes) {
+                releaseNotes = detailData.notes;
+              }
+            } catch (err) {
+              console.error("No se pudieron cargar los detalles adicionales de Discogs", err);
+            }
+          }
+
           pendingVinyl = {
             title: album.title,
             cover: album.cover_image || album.thumb,
             year: album.year || 'Desconocido',
             country: album.country || 'Desconocido',
             label: album.label ? album.label[0] : 'Desconocido',
-            genre: album.genre ? album.genre.join(', ') : 'Desconocido',
+            genre: combinedGenres,
+            tracklist: tracklistData,
+            notes: releaseNotes,
             createdAt: serverTimestamp()
           };
 
@@ -575,8 +675,6 @@
       }
     }
 
-    // --- OPERACIONES EN FIREBASE ---
-
     window.saveVinylWithOwner = async function(owner) {
       if (pendingVinyl) {
         pendingVinyl.owner = owner;
@@ -589,6 +687,44 @@
           alert("Error al guardar en la nube: " + e.message);
         }
       }
+    }
+
+    window.openDetailModal = function(id) {
+      const item = window.vinylCollection.find(v => v.id === id);
+      if (!item) return;
+
+      document.getElementById('det-title').innerText = item.title || 'Sin Título';
+      document.getElementById('det-cover').src = item.cover || 'https://via.placeholder.com/150?text=Sin+Portada';
+      
+      document.getElementById('det-info').innerHTML = `
+        <b>Propietario:</b> ${item.owner || 'N/A'}<br>
+        <b>Año:</b> ${item.year || 'N/A'} | <b>País:</b> ${item.country || 'N/A'}<br>
+        <b>Sello:</b> ${item.label || 'N/A'}<br>
+        <b>Género / Estilos:</b> ${item.genre || 'N/A'}
+      `;
+
+      const trackContainer = document.getElementById('det-tracklist');
+      trackContainer.innerHTML = '';
+      if (item.tracklist && item.tracklist.length > 0) {
+        item.tracklist.forEach(track => {
+          const div = document.createElement('div');
+          div.className = 'track-item';
+          div.innerHTML = `
+            <span class="track-title">${track.position ? track.position + '. ' : ''}${track.title}</span>
+            <span class="track-dur">${track.duration || ''}</span>
+          `;
+          trackContainer.appendChild(div);
+        });
+      } else {
+        trackContainer.innerHTML = '<p style="color: var(--text-sub); text-align:center; margin: 10px 0;">No hay canciones registradas para esta edición.</p>';
+      }
+
+      document.getElementById('det-notes').innerText = item.notes || 'Sin notas adicionales';
+      document.getElementById('detail-modal').style.display = 'flex';
+    }
+
+    window.closeDetailModal = function() {
+      document.getElementById('detail-modal').style.display = 'none';
     }
 
     window.deleteVinyl = async function(id) {
