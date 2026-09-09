@@ -93,7 +93,8 @@
     }
     .btn-group {
       display: flex;
-      gap: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     button {
       flex: 1;
@@ -104,10 +105,12 @@
       border-radius: 20px;
       font-weight: bold;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
     }
     button.secondary { background-color: #333; }
+    button.btn-backup { background-color: #2196f3; }
     button.btn-tidal { background-color: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 6px; }
     
     /* Contenedor del Buscador con botón de borrar */
@@ -462,7 +465,7 @@
       font-size: 10px;
     }
 
-    /* Detalles y etiquetas interactivas (Géneros y Artistas) */
+    /* Detalles y etiquetas interactivas */
     .detail-cover {
       width: 150px;
       height: 150px;
@@ -561,7 +564,8 @@
   <div class="controls">
     <div class="btn-group">
       <button onclick="window.openAddOptions()">📷 Añadir Vinilo</button>
-      <button id="btn-toggle-view" class="secondary" onclick="window.toggleViewMode()">📄 Ver como Listado</button>
+      <button id="btn-toggle-view" class="secondary" onclick="window.toggleViewMode()">📄 Listado</button>
+      <button class="btn-backup" onclick="window.exportJSON()">💾 Backup JSON</button>
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
     
@@ -788,8 +792,39 @@
         window.renderCollection();
       }, (error) => {
         console.error("Error en la conexión con Firestore:", error);
-        document.getElementById('album-grid').innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: var(--danger);">Error de permisos o conexión con Firestore. Revisa las reglas de seguridad en Firebase.</p>`;
+        document.getElementById('album-grid').innerHTML = `<p style="grid-column: 1/-1; text-align:center; color: var(--danger);">Error de permisos o conexión con Firestore.</p>`;
       });
+    }
+
+    /* FUNCIÓN PARA EXPORTAR LA COLECCIÓN COMPLETA A JSON */
+    window.exportJSON = function() {
+      if (!window.vinylCollection || window.vinylCollection.length === 0) {
+        alert("No hay ningún vinilo en la colección para exportar.");
+        return;
+      }
+
+      // Limpiamos los objetos para dar formato válido a las fechas de Firebase
+      const cleanCollection = window.vinylCollection.map(item => {
+        const copy = { ...item };
+        if (copy.createdAt && typeof copy.createdAt.toDate === 'function') {
+          copy.createdAt = copy.createdAt.toDate().toISOString();
+        }
+        return copy;
+      });
+
+      const jsonString = JSON.stringify(cleanCollection, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = url;
+      downloadAnchor.download = `coleccion_vinilos_${dateStr}.json`;
+      
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      document.body.removeChild(downloadAnchor);
+      URL.revokeObjectURL(url);
     }
 
     /* GESTIÓN DE LA LUPA DE BÚSQUEDA Y BOTÓN X */
@@ -902,9 +937,9 @@
       isListView = !isListView;
       const btnToggle = document.getElementById('btn-toggle-view');
       if (isListView) {
-        btnToggle.innerText = "🖼️ Ver como Miniaturas";
+        btnToggle.innerText = "🖼️ Miniaturas";
       } else {
-        btnToggle.innerText = "📄 Ver como Listado";
+        btnToggle.innerText = "📄 Listado";
       }
       window.renderCollection();
     }
