@@ -111,6 +111,7 @@
     }
     button.secondary { background-color: #333; }
     button.btn-backup { background-color: #2196f3; }
+    button.btn-restore { background-color: #9c27b0; }
     button.btn-tidal { background-color: #111; border: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 6px; }
     
     /* Contenedor del Buscador con botón de borrar */
@@ -565,9 +566,13 @@
     <div class="btn-group">
       <button onclick="window.openAddOptions()">📷 Añadir Vinilo</button>
       <button id="btn-toggle-view" class="secondary" onclick="window.toggleViewMode()">📄 Listado</button>
-      <button class="btn-backup" onclick="window.exportJSON()">💾 Backup JSON</button>
+      <button class="btn-backup" onclick="window.exportJSON()">💾 Backup</button>
+      <button class="btn-restore" onclick="window.triggerImportJSON()">📥 Cargar</button>
       <button id="btn-stop" class="secondary" onclick="window.stopScanner()" style="display:none;">Cancelar Cámara</button>
     </div>
+
+    <!-- Input oculto para seleccionar el archivo JSON de respaldo -->
+    <input type="file" id="json-file-input" accept=".json" style="display: none;" onchange="window.handleJSONUpload(event)">
     
     <!-- Lupa / Buscador con botón X para borrar -->
     <div class="search-wrapper">
@@ -796,14 +801,13 @@
       });
     }
 
-    /* FUNCIÓN PARA EXPORTAR LA COLECCIÓN COMPLETA A JSON */
+    /* EXPORTAR COLECCIÓN A JSON */
     window.exportJSON = function() {
       if (!window.vinylCollection || window.vinylCollection.length === 0) {
         alert("No hay ningún vinilo en la colección para exportar.");
         return;
       }
 
-      // Limpiamos los objetos para dar formato válido a las fechas de Firebase
       const cleanCollection = window.vinylCollection.map(item => {
         const copy = { ...item };
         if (copy.createdAt && typeof copy.createdAt.toDate === 'function') {
@@ -825,6 +829,53 @@
       downloadAnchor.click();
       document.body.removeChild(downloadAnchor);
       URL.revokeObjectURL(url);
+    }
+
+    /* IMPORTAR Y CARGAR RESPALDO JSON A FIREBASE */
+    window.triggerImportJSON = function() {
+      document.getElementById('json-file-input').click();
+    }
+
+    window.handleJSONUpload = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const importedItems = JSON.parse(e.target.result);
+
+          if (!Array.isArray(importedItems)) {
+            alert("El archivo no tiene un formato válido (debe ser una lista JSON de vinilos).");
+            return;
+          }
+
+          const confirmed = confirm(`Se han encontrado ${importedItems.length} vinilos en el archivo.\n\n¿Quieres cargarlos a la nube?`);
+          if (!confirmed) {
+            event.target.value = '';
+            return;
+          }
+
+          let addedCount = 0;
+          for (const item of importedItems) {
+            // Eliminamos la clave id para que Firebase cree un ID único nuevo
+            const { id, ...itemToSave } = item;
+            
+            itemToSave.createdAt = serverTimestamp();
+
+            await addDoc(vinilosRef, itemToSave);
+            addedCount++;
+          }
+
+          alert(`¡Carga completada con éxito!\nSe han añadido ${addedCount} vinilos a la colección.`);
+          event.target.value = ''; // Resetea el input para poder subir otro si se desea
+
+        } catch (err) {
+          alert("Error al procesar el archivo JSON: " + err.message);
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
     }
 
     /* GESTIÓN DE LA LUPA DE BÚSQUEDA Y BOTÓN X */
